@@ -39,20 +39,20 @@ export const PROJECTS: Project[] = [
 
 export const WORK_EXPERIENCE: WorkExperience[] = [
   {
-    company: 'Nomad Global',
-    title: 'Software Engineer',
-    start: '2023',
-    end: 'Present',
-    link: 'https://nomadglobal.com',
-    id: 'work1',
-  },
-  {
     company: 'Ink-er',
     title: 'Founder',
     start: '2025',
     end: 'Present',
     link: 'https://ink-me.me',
     id: 'work2',
+  },
+  {
+    company: 'Nomad Global',
+    title: 'Software Engineer',
+    start: '2023',
+    end: 'Present',
+    link: 'https://nomadglobal.com',
+    id: 'work1',
   },
   {
     company: 'MB Labs',
@@ -82,6 +82,12 @@ export const WORK_EXPERIENCE: WorkExperience[] = [
 
 export const BLOG_POSTS: BlogPost[] = [
   {
+    title: 'How i create a full cross platform to find Inkers',
+    description: 'A full story about ink-er.me',
+    link: '/blog/inker',
+    uid: 'blog-3',
+  },
+  {
     title: 'PCI Credit Card PCI Compliance',
     description: 'How we implement PCI Compliance ',
     link: '/blog/pci',
@@ -92,12 +98,6 @@ export const BLOG_POSTS: BlogPost[] = [
     description: 'How to create a signature component',
     link: '/blog/signature-component',
     uid: 'blog-2',
-  },
-  {
-    title: 'How i create a full cross platform to find Inkers',
-    description: 'A full story about ink-er.me',
-    link: '/blog/inker',
-    uid: 'blog-3',
   },
 ]
 
