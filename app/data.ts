@@ -29,70 +29,74 @@ type SocialLink = {
 
 export const PROJECTS: Project[] = [
   {
-    name: 'Motion Primitives Pro',
-    description:
-      'Advanced components and templates to craft beautiful websites.',
-    link: 'https://pro.motion-primitives.com/',
-    video:
-      'https://res.cloudinary.com/read-cv/video/upload/t_v_b/v1/1/profileItems/W2azTw5BVbMXfj7F53G92hMVIn32/newProfileItem/d898be8a-7037-4c71-af0c-8997239b050d.mp4?_a=DATAdtAAZAA0',
+    name: 'Nomad Explorer',
+    description: 'Full development mobile implementation credit card',
+    link: 'https://www.nomadglobal.com/nomad-explorer',
+    video: './nomad-explorer.mp4',
     id: 'project1',
-  },
-  {
-    name: 'Motion Primitives',
-    description: 'UI kit to make beautiful, animated interfaces.',
-    link: 'https://motion-primitives.com/',
-    video:
-      'https://res.cloudinary.com/read-cv/video/upload/t_v_b/v1/1/profileItems/W2azTw5BVbMXfj7F53G92hMVIn32/XSfIvT7BUWbPRXhrbLed/ee6871c9-8400-49d2-8be9-e32675eabf7e.mp4?_a=DATAdtAAZAA0',
-    id: 'project2',
   },
 ]
 
 export const WORK_EXPERIENCE: WorkExperience[] = [
   {
-    company: 'Reglazed Studio',
-    title: 'CEO',
-    start: '2024',
+    company: 'Nomad Global',
+    title: 'Software Engineer',
+    start: '2023',
     end: 'Present',
-    link: 'https://ibelick.com',
+    link: 'https://nomadglobal.com',
     id: 'work1',
   },
   {
-    company: 'Freelance',
-    title: 'Design Engineer',
-    start: '2022',
-    end: '2024',
-    link: 'https://ibelick.com',
+    company: 'Ink-er',
+    title: 'Founder',
+    start: '2025',
+    end: 'Present',
+    link: 'https://ink-me.me',
     id: 'work2',
   },
   {
-    company: 'Freelance',
-    title: 'Front-end Developer',
-    start: '2017',
-    end: 'Present',
-    link: 'https://ibelick.com',
+    company: 'MB Labs',
+    title: 'Software Engineer',
+    start: '2022',
+    end: '2024',
+    link: 'https://mblabs.com.br/',
     id: 'work3',
+  },
+  {
+    company: 'CI&T',
+    title: 'Front-end Developer',
+    start: '2022 - Jan',
+    end: '2022 - Dec',
+    link: 'https://ibelick.com',
+    id: 'work4',
+  },
+  {
+    company: 'MB Labs',
+    title: 'Software Engineer',
+    start: '2020',
+    end: '2022',
+    link: 'https://mblabs.com.br/',
+    id: 'work5',
   },
 ]
 
 export const BLOG_POSTS: BlogPost[] = [
   {
-    title: 'Exploring the Intersection of Design, AI, and Design Engineering',
-    description: 'How AI is changing the way we design',
-    link: '/blog/exploring-the-intersection-of-design-ai-and-design-engineering',
+    title: 'PCI Credit Card PCI Compliance',
+    description: 'How we implement PCI Compliance ',
+    link: '/blog/pci',
     uid: 'blog-1',
   },
   {
-    title: 'Why I left my job to start my own company',
-    description:
-      'A deep dive into my decision to leave my job and start my own company',
-    link: '/blog/exploring-the-intersection-of-design-ai-and-design-engineering',
+    title: 'Create a Signature component in React Native',
+    description: 'How to create a signature component',
+    link: '/blog/signature-component',
     uid: 'blog-2',
   },
   {
-    title: 'What I learned from my first year of freelancing',
-    description:
-      'A look back at my first year of freelancing and what I learned',
-    link: '/blog/exploring-the-intersection-of-design-ai-and-design-engineering',
+    title: 'How i create a full cross platform to find Inkers',
+    description: 'A full story about ink-er.me',
+    link: '/blog/inker',
     uid: 'blog-3',
   },
 ]
@@ -100,20 +104,20 @@ export const BLOG_POSTS: BlogPost[] = [
 export const SOCIAL_LINKS: SocialLink[] = [
   {
     label: 'Github',
-    link: 'https://github.com/ibelick',
+    link: 'https://github.com/lucasaraujonrt',
   },
   {
     label: 'Twitter',
-    link: 'https://twitter.com/ibelick',
+    link: 'https://twitter.com/lucasaraujonrt',
   },
   {
     label: 'LinkedIn',
-    link: 'https://www.linkedin.com/in/ibelick',
+    link: 'https://www.linkedin.com/in/lucasaraujonrt',
   },
   {
     label: 'Instagram',
-    link: 'https://www.instagram.com/ibelick',
+    link: 'https://www.instagram.com/lucasaraujonrt',
   },
 ]
 
-export const EMAIL = 'your@email.com'
+export const EMAIL = 'lucasaraujo8186@email.com'

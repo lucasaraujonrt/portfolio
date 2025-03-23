@@ -1,0 +1,158 @@
+## How to Create a Signature Component with React Native
+
+Developing a document signature component using React Native Skia was a very exciting and rewarding challenge for me. React Native Skia is a library that allows you to create user interfaces using Skia, a high-quality 2D rendering library. It offers powerful features for drawing and animation and is a great option for creating custom, high-performance interfaces.
+
+Before diving into the implementation itself, I decided to test three alternatives:
+
+- react-native-svg + react-native-gesture-handler + react-native-reanimated`
+- react-native-webview
+- react-native-skia
+
+Right away, when I started implementing the first alternative, I realized it would be VERY labor-intensive, especially when handling paths.
+
+At the time of this implementation, we conducted several searches on how to do it and found many libraries, such as:
+
+[React Native Signature Canvas](https://github.com/YanYuanFE/react-native-signature-canvas)
+
+But since every developer loves to build things from scratch, I attempted my own implementation, and the tool I chose was SKIA.
+
+### Installation
+
+To get started, we need to install the package in your React Native project:
+
+```sh
+yarn add @shopify/react-native-skia
+```
+
+If you are using a bare project (Android and iOS), follow the standard iOS configuration:
+
+```sh
+cd ios && pod install
+```
+
+### Building the Component
+
+We import the following components from the library:
+
+```tsx
+import {
+  Canvas,
+  Path,
+  Skia,
+  useTouchHandler,
+  useValue,
+} from '@shopify/react-native-skia'
+```
+
+#### Component Explanations
+
+- **Canvas**: The base component for using other Skia components, like a wrapper.
+- **Path**: The component we will use to draw the stroke.
+- **Skia**: A function/component that helps us create the Path.
+- **useTouchHandler**: The magic hook that allows us to capture the position of the user's finger.
+- **useValue**: A hook for storing Skia values, similar to `useState`.
+
+With this brief explanation, let's build the component.
+
+```tsx
+import {
+  Canvas,
+  Path,
+  Skia,
+  useTouchHandler,
+  useValue,
+} from '@shopify/react-native-skia'
+import React from 'react'
+
+const Draw = () => {
+  const path = useValue(Skia.Path.Make())
+  const pathColor = useValue('red') // Signature color
+
+  const touchHandler = useTouchHandler({})
+
+  return (
+    <Canvas
+      style={{ flex: 1, backgroundColor: '#2F2F36' }}
+      onTouch={touchHandler}
+    >
+      <Path path={path} color={pathColor} strokeWidth={4} style="stroke" />
+    </Canvas>
+  )
+}
+
+export default Draw
+```
+
+By using the `useTouchHandler` hook, we have three methods that return the X and Y coordinates of the canvas as callbacks:
+
+- `onActive`: Active position
+- `onStart`: Initial position
+- `onEnd`: Position when the finger is lifted from the screen
+
+We add `onActive` and `onStart` inside the object:
+
+```tsx
+onStart: ({ x, y }) => {
+  path.current.moveTo(x, y);
+},
+
+onActive: ({ x, y }) => {
+  path.current.lineTo(x, y);
+},
+```
+
+This already creates a continuous Skia Path within our canvas.
+
+### Capturing the Signature as an Image
+
+If you want to capture an image every time the finger is lifted from the screen, it's quite simple:
+
+Import the canvas reference:
+
+```tsx
+import { useCanvasRef } from '@shopify/react-native-skia'
+```
+
+Add it inside the canvas:
+
+```tsx
+<Canvas
+  ref={ref}
+  style={{ flex: 1, backgroundColor: '#2F2F36' }}
+  onTouch={touchHandler}
+>
+  ...
+</Canvas>
+```
+
+And within our `useTouchHandler`, add the `onEnd` event:
+
+```tsx
+onEnd: () => {
+  const image = ref.current?.makeImageSnapshot()
+  if (image) {
+    const base64 = image.encodeToBase64()
+  }
+}
+```
+
+### Conclusion
+
+Overall, developing a document signature component using React Native Skia was an enriching experience. I learned a lot about the Skia API and how to create custom interfaces in React Native. I also had the opportunity to create a useful tool that can be used in many different applications.
+
+If you're interested in creating custom interfaces with React Native Skia, I highly recommend experimenting with it.
+
+#### Final Result:
+
+<iframe
+  width="471"
+  height="838"
+  src="https://www.youtube.com/embed/AdD9iQlXLm8"
+  title="React native skia signature"
+  frameBorder="0"
+  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+  referrerPolicy="strict-origin-when-cross-origin"
+  allowFullScreen
+></iframe>
+
+[GitHub - lucasaraujonrt/react-native-nrt-boilerplate at poc/draw-component](https://github.com/lucasaraujonrt/react-native-nrt-boilerplate)

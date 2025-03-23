@@ -1,0 +1,100 @@
+# Creating the Inker Project: A Platform for Tattoo Artists
+
+## Overview
+
+Inker is a comprehensive platform designed to help tattoo artists manage their businesses and connect with potential clients. Developed with modern technologies such as Next.js 15, Prisma, AWS, Resend, and ShadcnUI, the platform offers a comprehensive set of tools for tattoo artists to manage their portfolios, appointments, and client communication.
+
+## Key Features
+
+### For Tattoo Artists
+
+- **Professional Profile**: Creation of personalized profiles with unique URL (@username)
+- **Digital Portfolio**: Upload and management of works through integration with AWS S3
+- **Appointment Management**: Complete system for scheduling, confirming, and managing appointments
+- **Style Visibility**: Registration of tattoo styles to facilitate client discovery
+- **Analytics**: Performance metrics on revenue, clients, and appointments
+- **Email Notifications**: Automated communication system for confirmations and reminders
+
+### For Clients
+
+- **Tattoo Artist Discovery**: Search for artists filtered by location and style
+- **Portfolio Viewing**: Responsive gallery of tattoo artists' works
+- **Online Scheduling**: Automated time requests and confirmations
+- **Direct Communication**: Contact channels via WhatsApp, Instagram, or website
+
+## Technical Architecture
+
+### Frontend
+
+- **Next.js 15**: React framework with support for Server Components and App Router
+- **TailwindCSS + ShadcnUI**: Consistent and customizable design system
+- **Framer Motion**: Smooth animations for better user experience
+- **React Query**: Server state management with caching and synchronization
+- **NuQS**: URL state management for filters and searches
+- **React Hook Form + Zod**: Typed and robust form validation
+
+### Backend
+
+- **Next.js API Routes**: Endpoints organized by domain
+- **Prisma ORM**: Typed data modeling with automatic migrations and seeding
+- **AWS S3**: Storage and management of portfolio images and references
+- **Resend**: Transactional email service for notifications and communications
+- **Better Auth**: Authentication system with support for multiple providers and RBAC
+
+### Database
+
+- **PostgreSQL**: Relational database system for persistent storage
+- **Prisma Schema**: Data model with complex relationships between entities
+
+## Challenges and Solutions
+
+### Image Upload Management
+
+- **Challenge**: Implement secure and efficient upload of multiple images for portfolios.
+- **Solution**: Integration with AWS S3 using direct browser upload with presigned URLs, combined with metadata stored in the PostgreSQL database.
+
+### Appointment System
+
+- **Challenge**: Create an appointment system with conflicts, confirmations, and notifications.
+- **Solution**: Implementation of a flexible data model with states (pending, confirmed, canceled) and integration with transactional emails via Resend.
+
+### Performance with Large Data Sets
+
+- **Challenge**: Maintain performance when dealing with many tattoo artists, portfolios, and appointments.
+- **Solution**: Implementation of infinite pagination, React Query for efficient caching, and Prisma query optimization with precise field selection.
+
+### Transactional Email System
+
+- **Challenge**: Create rich email templates and ensure deliverability.
+- **Solution**: Use of the React Email library for reusable JSX templates and integration with Resend for high delivery rates.
+
+### Mobile Experience
+
+- **Challenge**: Ensure a responsive and optimized experience for mobile devices.
+- **Solution**: Mobile-first design with TailwindCSS, adaptable components from ShadcnUI, and specific touch optimizations.
+
+## Development Process
+
+The development followed a modular approach, focusing on:
+
+- **Data Modeling**: Precise definition of the Prisma schema to capture all relationships
+- **API Architecture**: Endpoints organized by domain for better maintainability
+- **Componentization**: Reusable components for consistent UI
+- **Custom Hooks**: Separation of business logic from rendering
+- **Integrated Testing**: Quality assurance with automated tests
+
+## Future Expansions
+
+- **Payment System**: Integration for paid appointments and deposits
+- **Internal Chat**: Direct messages between tattoo artists and clients
+- **Mobile App**: Native version for iOS and Android
+- **Themed Galleries**: Advanced categorization of works
+- **Design Marketplace**: Platform for selling ready-made designs
+
+## Conclusion
+
+The Inker project represents a comprehensive solution for the tattoo market, combining modern web development technologies with the specific needs of the sector. The chosen architecture provides scalability, performance, and a premium user experience, positioning the platform as an essential tool for tattoo artists looking to expand their reach and optimize their business management.
+
+## Learnings
+
+[This section will be filled by the author with personal reflections on the development process]
