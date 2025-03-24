@@ -43,7 +43,7 @@ export const WORK_EXPERIENCE: WorkExperience[] = [
     title: 'Founder',
     start: '2025',
     end: 'Present',
-    link: 'https://ink-me.me',
+    link: 'https://ink-er.me',
     id: 'work2',
   },
   {
@@ -67,7 +67,7 @@ export const WORK_EXPERIENCE: WorkExperience[] = [
     title: 'Front-end Developer',
     start: '2022 - Jan',
     end: '2022 - Dec',
-    link: 'https://ibelick.com',
+    link: 'https://ciandt.com/',
     id: 'work4',
   },
   {
