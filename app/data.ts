@@ -35,6 +35,13 @@ export const PROJECTS: Project[] = [
     video: './nomad-explorer.mp4',
     id: 'project1',
   },
+  {
+    name: 'Ink-er',
+    description: 'Startup to help tattoo artists become better organized',
+    link: 'https://ink-er.me/landing',
+    video: './inker.mp4',
+    id: 'project2',
+  },
 ]
 
 export const WORK_EXPERIENCE: WorkExperience[] = [
