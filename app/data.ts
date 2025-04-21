@@ -95,12 +95,6 @@ export const BLOG_POSTS: BlogPost[] = [
     uid: 'blog-3',
   },
   {
-    title: 'PCI Credit Card PCI Compliance',
-    description: 'How we implement PCI Compliance ',
-    link: '/blog/pci',
-    uid: 'blog-1',
-  },
-  {
     title: 'Create a Signature component in React Native',
     description: 'How to create a signature component',
     link: '/blog/signature-component',
