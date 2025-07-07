@@ -89,6 +89,20 @@ export const WORK_EXPERIENCE: WorkExperience[] = [
 
 export const BLOG_POSTS: BlogPost[] = [
   {
+    title: 'Trello API Integration: A Simple Solution for Support Tickets',
+    description: 'Learn how to integrate Trello API to create an organized and visual support ticket system with automatic card creation.',
+    link: '/blog/trello',
+    uid: 'blog-5',
+  },
+  {
+    title:
+      'Sending Logs to Discord with Webhooks: A Cost-Effective Monitoring Solution',
+    description:
+      'Learn how to implement a functional and cost-free logging system using Discord webhooks for real-time notifications.',
+    link: '/blog/discord',
+    uid: 'blog-4',
+  },
+  {
     title: 'How i create a full cross platform to find Inkers',
     description: 'A full story about ink-er.me',
     link: '/blog/inker',

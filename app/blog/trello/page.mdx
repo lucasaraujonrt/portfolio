@@ -1,0 +1,307 @@
+# Trello API Integration: A Simple and Organized Solution for Support Tickets
+
+And what about support tickets? I could create a custom flow within Inker with an admin page featuring status tracking, responses, and more. But I chose a simpler and more organized solution: Trello. By creating a board for "operations/tickets" and having users write messages, I can automatically create cards via the Trello API whenever a user submits a support request.
+
+## Why Trello for Support Tickets?
+
+Trello offers a visual, intuitive way to manage support tickets without the complexity of building a custom ticketing system. With its robust API, you can:
+
+- Automatically create cards from user submissions
+- Organize tickets by status (To Do, In Progress, Done)
+- Attach files and images directly to cards
+- Track progress visually with boards and lists
+- Collaborate with team members in real-time
+
+## Setting up Trello API
+
+First, you'll need to set up your Trello API credentials:
+
+1. Go to [Trello Developer Portal](https://trello.com/app-key)
+2. Get your API Key
+3. Generate a Token with read/write permissions
+4. Create a board and get the List ID where you want to create cards
+
+## Environment Variables
+
+```env
+TRELLO_KEY=your_trello_api_key
+TRELLO_TOKEN=your_trello_token
+TRELLO_LIST_ID=your_list_id
+```
+
+## Implementation
+
+Here's how to implement a comprehensive Trello integration for support tickets:
+
+### API Route Setup
+
+```typescript
+import { NextRequest, NextResponse } from "next/server";
+
+const TRELLO_KEY = process.env.TRELLO_KEY!;
+const TRELLO_TOKEN = process.env.TRELLO_TOKEN!;
+const TRELLO_LIST_ID = process.env.TRELLO_LIST_ID!;
+
+export async function POST(req: NextRequest) {
+  try {
+    const formData = await req.formData();
+    const name = formData.get('name') as string;
+    const email = formData.get('email') as string;
+    const whatsapp = formData.get('whatsapp') as string;
+    const description = formData.get('description') as string;
+    const file = formData.get('file') as File | null;
+
+    if (!name || !email || !whatsapp || !description) {
+      return NextResponse.json(
+        { error: "All fields are required" },
+        { status: 400 }
+      );
+    }
+
+    const cardName = `🧾 Budget Request from ${name}`;
+    const cardDesc = `📱 WhatsApp: ${whatsapp}\n\n📧 Email: ${email}\n\n💬 Service Description:\n${description}`;
+
+    // Create card in Trello
+    const cardUrl = `https://api.trello.com/1/cards?key=${TRELLO_KEY}&token=${TRELLO_TOKEN}&idList=${TRELLO_LIST_ID}&name=${encodeURIComponent(
+      cardName
+    )}&desc=${encodeURIComponent(cardDesc)}`;
+
+    const cardResponse = await fetch(cardUrl, { method: "POST" });
+
+    if (!cardResponse.ok) {
+      const error = await cardResponse.text();
+      return NextResponse.json({ error }, { status: 500 });
+    }
+
+    const card = await cardResponse.json();
+
+    // If there's a file, upload it as attachment
+    if (file && file.size > 0) {
+      const attachmentFormData = new FormData();
+      attachmentFormData.append('file', file);
+      attachmentFormData.append('key', TRELLO_KEY);
+      attachmentFormData.append('token', TRELLO_TOKEN);
+
+      const attachmentUrl = `https://api.trello.com/1/cards/${card.id}/attachments`;
+      
+      const attachmentResponse = await fetch(attachmentUrl, {
+        method: "POST",
+        body: attachmentFormData,
+      });
+
+      if (!attachmentResponse.ok) {
+        console.error("Error attaching file:", await attachmentResponse.text());
+        // Don't return error, as card was already created
+      }
+    }
+
+    return NextResponse.json({
+      success: true,
+      message: "Budget request sent successfully!",
+      card: card,
+    });
+  } catch (error) {
+    console.error("Error processing budget request:", error);
+    return NextResponse.json(
+      {
+        error: "Error creating Trello card",
+      },
+      { status: 500 }
+    );
+  }
+}
+```
+
+## Advanced Features
+
+### Adding Labels and Due Dates
+
+```typescript
+// Enhanced card creation with labels and due dates
+const cardUrl = `https://api.trello.com/1/cards?key=${TRELLO_KEY}&token=${TRELLO_TOKEN}&idList=${TRELLO_LIST_ID}&name=${encodeURIComponent(
+  cardName
+)}&desc=${encodeURIComponent(cardDesc)}&idLabels=${labelId}&due=${dueDate}`;
+```
+
+### Creating Cards with Custom Fields
+
+```typescript
+// After creating the card, add custom fields
+const customFieldUrl = `https://api.trello.com/1/cards/${card.id}/customFields`;
+
+const customFieldData = {
+  key: TRELLO_KEY,
+  token: TRELLO_TOKEN,
+  idCustomField: 'your_custom_field_id',
+  value: {
+    text: 'Priority: High'
+  }
+};
+
+await fetch(customFieldUrl, {
+  method: 'PUT',
+  headers: {
+    'Content-Type': 'application/json',
+  },
+  body: JSON.stringify(customFieldData)
+});
+```
+
+### Moving Cards Between Lists
+
+```typescript
+// Function to move card to different status
+async function moveCardToList(cardId: string, listId: string) {
+  const moveUrl = `https://api.trello.com/1/cards/${cardId}?key=${TRELLO_KEY}&token=${TRELLO_TOKEN}&idList=${listId}`;
+  
+  const response = await fetch(moveUrl, { method: 'PUT' });
+  
+  if (!response.ok) {
+    throw new Error('Failed to move card');
+  }
+  
+  return response.json();
+}
+```
+
+## Frontend Integration
+
+### React Form Component
+
+```tsx
+'use client';
+
+import { useState } from 'react';
+
+export default function SupportTicketForm() {
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [message, setMessage] = useState('');
+
+  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    setIsSubmitting(true);
+
+    const formData = new FormData(e.currentTarget);
+    
+    try {
+      const response = await fetch('/api/trello', {
+        method: 'POST',
+        body: formData,
+      });
+
+      const result = await response.json();
+
+      if (result.success) {
+        setMessage('Ticket created successfully!');
+        (e.target as HTMLFormElement).reset();
+      } else {
+        setMessage('Error creating ticket');
+      }
+    } catch (error) {
+      setMessage('Error submitting form');
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  return (
+    <form onSubmit={handleSubmit} className="space-y-4">
+      <div>
+        <label htmlFor="name">Name</label>
+        <input
+          type="text"
+          id="name"
+          name="name"
+          required
+          className="w-full p-2 border rounded"
+        />
+      </div>
+
+      <div>
+        <label htmlFor="email">Email</label>
+        <input
+          type="email"
+          id="email"
+          name="email"
+          required
+          className="w-full p-2 border rounded"
+        />
+      </div>
+
+      <div>
+        <label htmlFor="whatsapp">WhatsApp</label>
+        <input
+          type="tel"
+          id="whatsapp"
+          name="whatsapp"
+          required
+          className="w-full p-2 border rounded"
+        />
+      </div>
+
+      <div>
+        <label htmlFor="description">Description</label>
+        <textarea
+          id="description"
+          name="description"
+          required
+          rows={4}
+          className="w-full p-2 border rounded"
+        />
+      </div>
+
+      <div>
+        <label htmlFor="file">Attachment (optional)</label>
+        <input
+          type="file"
+          id="file"
+          name="file"
+          className="w-full p-2 border rounded"
+        />
+      </div>
+
+      <button
+        type="submit"
+        disabled={isSubmitting}
+        className="w-full bg-blue-500 text-white p-2 rounded hover:bg-blue-600 disabled:opacity-50"
+      >
+        {isSubmitting ? 'Submitting...' : 'Submit Ticket'}
+      </button>
+
+      {message && (
+        <div className="mt-4 p-2 bg-green-100 text-green-800 rounded">
+          {message}
+        </div>
+      )}
+    </form>
+  );
+}
+```
+
+## Best Practices
+
+1. **Error Handling**: Always handle API errors gracefully and provide user feedback
+2. **Rate Limiting**: Be aware of Trello's API rate limits (300 requests per 10 seconds)
+3. **Security**: Never expose your API keys in client-side code
+4. **Validation**: Validate all input data before sending to Trello
+5. **Attachments**: Handle file uploads properly with size and type restrictions
+6. **Board Organization**: Use lists to represent different ticket statuses (New, In Progress, Resolved, Closed)
+
+## Webhook Integration
+
+For real-time updates, you can set up Trello webhooks:
+
+```typescript
+// Create a webhook to listen for card updates
+const webhookUrl = `https://api.trello.com/1/webhooks?key=${TRELLO_KEY}&token=${TRELLO_TOKEN}&callbackURL=${encodeURIComponent(
+  'https://yourapp.com/api/trello/webhook'
+)}&idModel=${boardId}`;
+
+const webhookResponse = await fetch(webhookUrl, { method: 'POST' });
+```
+
+## Conclusion
+
+Integrating Trello API for support ticket management provides a simple, visual, and cost-effective solution. It eliminates the need to build a complex ticketing system while still providing all the essential features for tracking and managing customer support requests.
+
+The implementation shown above provides a solid foundation that can be extended with additional features like automated responses, priority handling, and team assignment based on your specific needs.

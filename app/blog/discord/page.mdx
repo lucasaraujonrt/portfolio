@@ -1,0 +1,297 @@
+# Sending Logs to Discord with Webhooks: A Cost-Effective Monitoring Solution
+
+The question I asked myself was: what logging system can I adopt that's functional and cost-free? The first thing that came to mind was Discord with sending notifications to specific channels (errors, users who subscribed, etc.).
+
+## Why Discord for Logging?
+
+Discord webhooks provide a free, reliable, and instant way to receive notifications about your application's events. Unlike traditional logging services that often come with monthly fees, Discord allows you to create dedicated channels for different types of logs and receive real-time notifications directly in your workspace.
+
+## Setting up Discord Webhooks
+
+First, you'll need to create webhooks in your Discord server:
+
+1. Go to your Discord server settings
+2. Navigate to "Integrations" → "Webhooks"
+3. Click "New Webhook"
+4. Configure the webhook name and select the target channel
+5. Copy the webhook URL
+
+## Implementation
+
+Here's how to implement a comprehensive Discord logging system:
+
+### Basic Webhook Function
+
+```ts
+async function sendToWebhook(
+  webhookUrl: string,
+  data: unknown,
+): Promise<boolean> {
+  if (!webhookUrl || process.env.NEXT_PUBLIC_APP_URL?.includes('localhost')) {
+    console.warn('Discord webhook URL not provided')
+    return false
+  }
+
+  try {
+    const response = await fetch(webhookUrl, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(data),
+    })
+
+    if (!response.ok) {
+      throw new Error(
+        `Discord webhook request failed: ${response.status} ${response.statusText}`,
+      )
+    }
+
+    return true
+  } catch (error) {
+    console.error('Failed to send data to Discord webhook:', error)
+    return false
+  }
+}
+```
+
+### Environment Configuration
+
+```ts
+// Discord webhook URLs for different channels
+const DISCORD_LOG_WEBHOOK = process.env.DISCORD_LOG_WEBHOOK || ''
+const DISCORD_ERROR_WEBHOOK = process.env.DISCORD_ERROR_WEBHOOK || ''
+const DISCORD_SUPPORT_WEBHOOK = process.env.DISCORD_SUPPORT_WEBHOOK || ''
+const DISCORD_SUBSCRIPTION_WEBHOOK =
+  process.env.DISCORD_SUBSCRIPTION_WEBHOOK || ''
+```
+
+### Log Levels and Color Coding
+
+```ts
+export enum LogLevel {
+  INFO = 'info',
+  WARNING = 'warning',
+  ERROR = 'error',
+  CRITICAL = 'critical',
+}
+
+const LOG_COLORS = {
+  [LogLevel.INFO]: 0x3498db, // Blue
+  [LogLevel.WARNING]: 0xf1c40f, // Yellow
+  [LogLevel.ERROR]: 0xe74c3c, // Red
+  [LogLevel.CRITICAL]: 0x9b59b6, // Purple
+}
+```
+
+### Generic Log Function
+
+```ts
+export async function sendLogToDiscord(
+  level: LogLevel,
+  title: string,
+  message: string,
+  data?: Record<string, unknown>,
+): Promise<boolean> {
+  if (!DISCORD_LOG_WEBHOOK) {
+    console.warn('Discord log webhook not configured')
+    return false
+  }
+
+  try {
+    const embed = {
+      title: `[${level.toUpperCase()}] ${title}`,
+      description: message,
+      color: LOG_COLORS[level] || 0x95a5a6,
+      timestamp: new Date().toISOString(),
+      fields: [] as Array<{ name: string; value: string }>,
+    }
+
+    if (data) {
+      Object.entries(data).forEach(([key, value]) => {
+        const stringValue =
+          typeof value === 'object'
+            ? JSON.stringify(value).substring(0, 1000)
+            : String(value).substring(0, 1000)
+
+        embed.fields.push({ name: key, value: stringValue || 'N/A' })
+      })
+    }
+
+    return await sendToWebhook(DISCORD_LOG_WEBHOOK, { embeds: [embed] })
+  } catch (error) {
+    console.error('Failed to send log to Discord:', error)
+    return false
+  }
+}
+```
+
+### Specialized Notification Functions
+
+#### Error Alerts
+
+```ts
+export async function sendErrorAlert(
+  error: Error | string,
+  context?: Record<string, unknown>,
+): Promise<boolean> {
+  return sendLogToDiscord(
+    LogLevel.ERROR,
+    'Application Error',
+    typeof error === 'string' ? error : error.message,
+    {
+      stack: typeof error === 'string' ? undefined : error.stack,
+      ...context,
+    },
+  )
+}
+```
+
+#### User Subscription Events
+
+```ts
+export async function sendTrialStartedAlert(
+  userId: string,
+  userName: string,
+  userEmail: string,
+  planName: string,
+  trialEndDate: string,
+): Promise<boolean> {
+  try {
+    const embed = {
+      title: '🎉 Trial Started',
+      description: `User **${userName}** started a free trial for **${planName}**`,
+      color: 0x2ecc71,
+      timestamp: new Date().toISOString(),
+      fields: [
+        { name: '👤 User', value: userName },
+        { name: '📧 Email', value: userEmail },
+        { name: '📦 Plan', value: planName },
+        {
+          name: '📅 Trial End',
+          value: new Date(trialEndDate).toLocaleDateString(),
+        },
+        { name: '🆔 User ID', value: userId },
+      ],
+      footer: {
+        text: 'Trial started • Your Platform',
+      },
+    }
+
+    return await sendToWebhook(DISCORD_SUBSCRIPTION_WEBHOOK, {
+      embeds: [embed],
+    })
+  } catch (error) {
+    console.error('Failed to send trial started alert to Discord:', error)
+    return false
+  }
+}
+```
+
+#### Support Ticket Notifications
+
+```ts
+export async function sendSupportTicketAlert(
+  ticket: {
+    id: string
+    title: string
+    description: string
+    status: string
+    createdAt: string
+  },
+  userName: string,
+): Promise<boolean> {
+  try {
+    const embed = {
+      title: `🆘 New Support Ticket: ${ticket.title}`,
+      description: ticket.description,
+      color: 0xe74c3c,
+      timestamp: new Date().toISOString(),
+      fields: [
+        { name: 'Status', value: ticket.status },
+        { name: 'User', value: userName },
+        { name: 'Ticket ID', value: ticket.id },
+        {
+          name: 'Created At',
+          value: new Date(ticket.createdAt).toLocaleString(),
+        },
+      ],
+    }
+
+    return await sendToWebhook(DISCORD_SUPPORT_WEBHOOK, { embeds: [embed] })
+  } catch (error) {
+    console.error('Failed to send support ticket alert to Discord:', error)
+    return false
+  }
+}
+```
+
+## Usage Examples
+
+### Basic Error Logging
+
+```ts
+try {
+  // Your application logic
+  await someOperation()
+} catch (error) {
+  await sendErrorAlert(error, {
+    userId: user.id,
+    operation: 'someOperation',
+    timestamp: new Date().toISOString(),
+  })
+}
+```
+
+### User Event Tracking
+
+```ts
+// When a user starts a trial
+await sendTrialStartedAlert(
+  user.id,
+  user.name,
+  user.email,
+  'Premium Plan',
+  trialEndDate,
+)
+
+// When a user submits a support ticket
+await sendSupportTicketAlert(ticket, user.name)
+```
+
+### Custom Logging
+
+```ts
+// Log important business events
+await sendLogToDiscord(
+  LogLevel.INFO,
+  'Payment Processed',
+  'User payment was successfully processed',
+  {
+    userId: user.id,
+    amount: '$29.99',
+    plan: 'Premium',
+    paymentMethod: 'credit_card',
+  },
+)
+```
+
+## Best Practices
+
+1. **Channel Organization**: Create separate channels for different types of logs (errors, subscriptions, support, etc.)
+
+2. **Rate Limiting**: Be mindful of Discord's rate limits. Consider batching non-critical notifications.
+
+3. **Environment Handling**: Disable webhooks in development environments to avoid spam.
+
+4. **Data Privacy**: Be careful not to log sensitive information like passwords or payment details.
+
+5. **Error Handling**: Always handle webhook failures gracefully and have fallback logging mechanisms.
+
+6. **Message Formatting**: Use Discord's embed features to make your logs visually appealing and easy to read.
+
+## Conclusion
+
+Using Discord webhooks for logging provides a cost-effective, real-time monitoring solution that integrates seamlessly with your team's workflow. The rich formatting options and ability to create dedicated channels for different log types make it an excellent choice for small to medium-sized applications.
+
+The implementation shown above provides a solid foundation that can be extended based on your specific needs, whether you're tracking user subscriptions, monitoring errors, or managing support tickets.
