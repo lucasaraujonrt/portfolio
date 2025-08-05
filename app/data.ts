@@ -90,7 +90,8 @@ export const WORK_EXPERIENCE: WorkExperience[] = [
 export const BLOG_POSTS: BlogPost[] = [
   {
     title: 'Trello API Integration: A Simple Solution for Support Tickets',
-    description: 'Learn how to integrate Trello API to create an organized and visual support ticket system with automatic card creation.',
+    description:
+      'Learn how to integrate Trello API to create an organized and visual support ticket system with automatic card creation.',
     link: '/blog/trello',
     uid: 'blog-5',
   },
@@ -135,4 +136,4 @@ export const SOCIAL_LINKS: SocialLink[] = [
   },
 ]
 
-export const EMAIL = 'lucasaraujo8186@email.com'
+export const EMAIL = 'lucasaraujo8186@gmail.com'
