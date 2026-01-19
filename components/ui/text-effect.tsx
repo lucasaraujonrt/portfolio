@@ -262,8 +262,9 @@ export function TextEffect({
   }
 
   return (
-    <AnimatePresence mode="popLayout">
-      {trigger && (
+    <div>
+      <AnimatePresence mode="popLayout">
+        {trigger ? (
         <MotionTag
           initial="hidden"
           animate="visible"
@@ -285,7 +286,8 @@ export function TextEffect({
             />
           ))}
         </MotionTag>
-      )}
-    </AnimatePresence>
+        ) : null}
+      </AnimatePresence>
+    </div>
   )
 }

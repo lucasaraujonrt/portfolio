@@ -66,10 +66,11 @@ export function AnimatedBackground({
         'data-checked': activeId === id ? 'true' : 'false',
         ...interactionProps,
       },
-      <>
-        <AnimatePresence initial={false}>
-          {activeId === id && (
+      <div>
+        <AnimatePresence initial={false} mode="wait">
+          {activeId === id ? (
             <motion.div
+              key={id}
               layoutId={`background-${uniqueId}`}
               className={cn('absolute inset-0', className)}
               transition={transition}
@@ -81,10 +82,10 @@ export function AnimatedBackground({
                 opacity: 0,
               }}
             />
-          )}
+          ) : null}
         </AnimatePresence>
         <div className="z-10">{child.props.children}</div>
-      </>,
+      </div>,
     )
   })
 }
