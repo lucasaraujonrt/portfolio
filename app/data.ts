@@ -89,6 +89,13 @@ export const WORK_EXPERIENCE: WorkExperience[] = [
 
 export const BLOG_POSTS: BlogPost[] = [
   {
+    title: 'Building Native iOS Widgets with Swift in Expo',
+    description:
+      'How I used @bacons/apple-targets to build native SwiftUI widgets for React Native without ejecting from Expo.',
+    link: '/blog/inker-widgets',
+    uid: 'blog-6',
+  },
+  {
     title: 'Trello API Integration: A Simple Solution for Support Tickets',
     description:
       'Learn how to integrate Trello API to create an organized and visual support ticket system with automatic card creation.',
