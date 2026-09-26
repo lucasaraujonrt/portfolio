@@ -9,18 +9,17 @@ export default function BlogPage() {
         <div className="flex flex-col space-y-24">
           <div className="flex flex-col space-y-8">
             <div className="flex flex-col space-y-4">
-              <h1 className="text-lg font-medium text-zinc-900 dark:text-zinc-50">
+              <h1 className="text-lg font-medium text-zinc-900">
                 Blog
               </h1>
-              <p className="text-zinc-600 dark:text-zinc-400">
+              <p className="text-zinc-600">
                 My thoughts on software development, startups, and technology.
               </p>
             </div>
 
             <div className="flex flex-col space-y-0">
               <AnimatedBackground
-                enableHover
-                className="rounded-xl bg-zinc-100 p-1 dark:bg-zinc-900"
+                className="rounded-xl bg-zinc-100 p-1"
               >
                 {BLOG_POSTS.map((post) => (
                   <Link
@@ -30,10 +29,10 @@ export default function BlogPage() {
                     data-id={post.uid}
                   >
                     <div className="flex flex-col space-y-1">
-                      <h4 className="font-normal dark:text-zinc-100">
+                      <h4 className="font-normal">
                         {post.title}
                       </h4>
-                      <p className="text-zinc-500 dark:text-zinc-400">
+                      <p className="text-zinc-500">
                         {post.description}
                       </p>
                     </div>

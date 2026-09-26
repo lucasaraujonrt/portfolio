@@ -1,7 +1,6 @@
 'use client'
 import { motion } from 'motion/react'
 import { XIcon } from 'lucide-react'
-import { Spotlight } from '@/components/ui/spotlight'
 import { Magnetic } from '@/components/ui/magnetic'
 import {
   MorphingDialog,
@@ -13,8 +12,10 @@ import {
 import Link from 'next/link'
 import { AnimatedBackground } from '@/components/ui/animated-background'
 import {
+  OPEN_SOURCE,
   PROJECTS,
   WORK_EXPERIENCE,
+  BACKGROUND,
   BLOG_POSTS,
   EMAIL,
   SOCIAL_LINKS,
@@ -62,7 +63,7 @@ function ProjectVideo({ src }: ProjectVideoProps) {
         />
       </MorphingDialogTrigger>
       <MorphingDialogContainer>
-        <MorphingDialogContent className="relative aspect-video rounded-2xl bg-zinc-50 p-1 ring-1 ring-zinc-200/50 ring-inset dark:bg-zinc-950 dark:ring-zinc-800/50">
+        <MorphingDialogContent className="relative aspect-video rounded-2xl bg-zinc-50 p-1 ring-1 ring-zinc-200/50 ring-inset">
           <video
             src={src}
             autoPlay
@@ -100,7 +101,7 @@ function MagneticSocialLink({
     <Magnetic springOptions={{ bounce: 0 }} intensity={0.3}>
       <a
         href={link}
-        className="group relative inline-flex shrink-0 items-center gap-[1px] rounded-full bg-zinc-100 px-2.5 py-1 text-sm text-black transition-colors duration-200 hover:bg-zinc-950 hover:text-zinc-50 dark:bg-zinc-800 dark:text-zinc-100 dark:hover:bg-zinc-700"
+        className="group relative inline-flex shrink-0 items-center gap-[1px] rounded-full bg-zinc-100 px-2.5 py-1 text-sm text-zinc-900 transition-colors duration-200 hover:bg-zinc-200"
       >
         {children}
         <svg
@@ -136,10 +137,46 @@ export default function Personal() {
         transition={TRANSITION_SECTION}
       >
         <div className="flex-1">
-          <p className="text-zinc-600 dark:text-zinc-400">
-            Always helping people when they need them. Enthusiast of mobile and
-            web development. Always looking for new technologies to learn.
+          <p className="text-zinc-600">
+            Software engineer at Nomad, in Campinas. I founded Inker and run
+            most of it with agents. The tools below are how they act, stop,
+            ask, and show what happened.
           </p>
+        </div>
+      </motion.section>
+
+      <motion.section
+        variants={VARIANTS_SECTION}
+        transition={TRANSITION_SECTION}
+      >
+        <h3 className="mb-3 text-lg font-medium">Open source</h3>
+        <div className="flex flex-col space-y-0">
+          <AnimatedBackground
+            className="h-full w-full rounded-lg bg-zinc-100"
+            transition={{
+              type: 'spring',
+              bounce: 0,
+              duration: 0.2,
+            }}
+          >
+            {OPEN_SOURCE.map((tool) => (
+              <a
+                key={tool.id}
+                className="-mx-3 rounded-xl px-3 py-3"
+                href={tool.link}
+                target="_blank"
+                rel="noopener noreferrer"
+                data-id={tool.id}
+              >
+                <div className="flex flex-col space-y-1">
+                  <h4 className="font-normal">{tool.name}</h4>
+                  <p className="text-zinc-500">
+                    {tool.description}
+                  </p>
+                </div>
+              </a>
+            ))}
+          </AnimatedBackground>
         </div>
       </motion.section>
 
@@ -151,19 +188,19 @@ export default function Personal() {
         <div className="grid grid-cols-1 gap-6 sm:grid-cols-2">
           {PROJECTS.map((project) => (
             <div key={project.name} className="space-y-2">
-              <div className="relative rounded-2xl bg-zinc-50/40 p-1 ring-1 ring-zinc-200/50 ring-inset dark:bg-zinc-950/40 dark:ring-zinc-800/50">
+              <div className="relative rounded-2xl bg-zinc-50/40 p-1 ring-1 ring-zinc-200/50 ring-inset">
                 <ProjectVideo src={project.video} />
               </div>
               <div className="px-1">
                 <a
-                  className="font-base group relative inline-block font-[450] text-zinc-900 dark:text-zinc-50"
+                  className="font-base group relative inline-block font-[450] text-zinc-900"
                   href={project.link}
                   target="_blank"
                 >
                   {project.name}
                   <span className="absolute bottom-0.5 left-0 block h-[1px] w-full max-w-0 bg-zinc-900 transition-all duration-200 group-hover:max-w-full"></span>
                 </a>
-                <p className="text-base text-zinc-600 dark:text-zinc-400">
+                <p className="text-base text-zinc-600">
                   {project.description}
                 </p>
               </div>
@@ -180,30 +217,20 @@ export default function Personal() {
         <div className="flex flex-col space-y-2">
           {WORK_EXPERIENCE.map((job) => (
             <a
-              className="relative overflow-hidden rounded-2xl bg-zinc-300/30 p-[1px] dark:bg-zinc-600/30"
+              className="rounded-2xl bg-white p-4 ring-1 ring-zinc-200"
               href={job.link}
               target="_blank"
               rel="noopener noreferrer"
               key={job.id}
             >
-              <Spotlight
-                className="from-zinc-900 via-zinc-800 to-zinc-700 blur-2xl dark:from-zinc-100 dark:via-zinc-200 dark:to-zinc-50"
-                size={64}
-              />
-              <div className="relative h-full w-full rounded-[15px] bg-white p-4 dark:bg-zinc-950">
-                <div className="relative flex w-full flex-row justify-between">
-                  <div>
-                    <h4 className="font-normal dark:text-zinc-100">
-                      {job.title}
-                    </h4>
-                    <p className="text-zinc-500 dark:text-zinc-400">
-                      {job.company}
-                    </p>
-                  </div>
-                  <p className="text-zinc-600 dark:text-zinc-400">
-                    {job.start} - {job.end}
-                  </p>
+              <div className="flex w-full flex-row justify-between">
+                <div>
+                  <h4 className="font-normal">{job.title}</h4>
+                  <p className="text-zinc-500">{job.company}</p>
                 </div>
+                <p className="text-zinc-600">
+                  {job.start} - {job.end}
+                </p>
               </div>
             </a>
           ))}
@@ -214,11 +241,54 @@ export default function Personal() {
         variants={VARIANTS_SECTION}
         transition={TRANSITION_SECTION}
       >
+        <h3 className="mb-5 text-lg font-medium">Background</h3>
+        <div className="flex flex-col space-y-4">
+          {BACKGROUND.map((item) => {
+            switch (item.kind) {
+              case 'school':
+                return (
+                  <div key={item.id}>
+                    <p className="text-zinc-600">{item.school}</p>
+                    <p className="text-zinc-500">
+                      {item.start} - {item.end}
+                    </p>
+                  </div>
+                )
+              case 'project':
+                return (
+                  <div key={item.id}>
+                    <p className="text-zinc-600">{item.name}</p>
+                    <p className="text-zinc-500">
+                      {item.org}, {item.start} - {item.end}
+                    </p>
+                  </div>
+                )
+              case 'credential':
+                return (
+                  <div key={item.id}>
+                    <p className="text-zinc-600">{item.name}</p>
+                    <p className="text-zinc-500">
+                      {item.org}, {item.when}
+                    </p>
+                  </div>
+                )
+              default: {
+                const _exhaustive: never = item
+                return _exhaustive
+              }
+            }
+          })}
+        </div>
+      </motion.section>
+
+      <motion.section
+        variants={VARIANTS_SECTION}
+        transition={TRANSITION_SECTION}
+      >
         <h3 className="mb-3 text-lg font-medium">Blog</h3>
         <div className="flex flex-col space-y-0">
           <AnimatedBackground
-            enableHover
-            className="h-full w-full rounded-lg bg-zinc-100 dark:bg-zinc-900/80"
+            className="h-full w-full rounded-lg bg-zinc-100"
             transition={{
               type: 'spring',
               bounce: 0,
@@ -233,12 +303,8 @@ export default function Personal() {
                 data-id={post.uid}
               >
                 <div className="flex flex-col space-y-1">
-                  <h4 className="font-normal dark:text-zinc-100">
-                    {post.title}
-                  </h4>
-                  <p className="text-zinc-500 dark:text-zinc-400">
-                    {post.description}
-                  </p>
+                  <h4 className="font-normal">{post.title}</h4>
+                  <p className="text-zinc-500">{post.description}</p>
                 </div>
               </Link>
             ))}
@@ -251,9 +317,9 @@ export default function Personal() {
         transition={TRANSITION_SECTION}
       >
         <h3 className="mb-5 text-lg font-medium">Connect</h3>
-        <p className="mb-5 text-zinc-600 dark:text-zinc-400">
+        <p className="mb-5 text-zinc-600">
           Feel free to contact me at{' '}
-          <a className="underline dark:text-zinc-300" href={`mailto:${EMAIL}`}>
+          <a className="underline" href={`mailto:${EMAIL}`}>
             {EMAIL}
           </a>
         </p>
