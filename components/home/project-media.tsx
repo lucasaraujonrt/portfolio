@@ -6,19 +6,18 @@ import { mono } from './styles'
 const FRAME =
   'aspect-[16/10] w-full overflow-hidden rounded-[14px] border border-zinc-200 bg-zinc-100'
 
-const VIDEOS: Partial<Record<ProjectId, string>> = {
-  inker: '/inker.mp4',
-  nomad: '/nomad-explorer.mp4',
-  telao: '/telao-demo.mp4',
+const PORTRAIT_FRAME =
+  'relative aspect-[4/5] w-full overflow-hidden rounded-[14px] border border-zinc-200 bg-zinc-100 md:aspect-square'
+
+type Video = { src: string; poster?: string }
+
+const VIDEOS: Partial<Record<ProjectId, Video>> = {
+  inker: { src: '/inker.mp4', poster: '/inker-poster.jpg' },
+  nomad: { src: '/nomad-explorer.mp4', poster: '/nomad-explorer-poster.jpg' },
+  telao: { src: '/telao-demo.mp4' },
 }
 
-function TypographicFrame({
-  title,
-  line,
-}: {
-  title: string
-  line: string
-}) {
+function TypographicFrame({ title, line }: { title: string; line: string }) {
   return (
     <div
       className={`${FRAME} flex flex-col items-center justify-center gap-2 bg-zinc-50`}
@@ -42,7 +41,7 @@ export function ProjectMedia({
 }) {
   const rootRef = useRef<HTMLDivElement>(null)
   const videoRef = useRef<HTMLVideoElement>(null)
-  const src = VIDEOS[id]
+  const video = VIDEOS[id]
 
   useEffect(() => {
     const video = videoRef.current
@@ -51,7 +50,8 @@ export function ProjectMedia({
     const play = () => void video.play().catch(() => undefined)
     const stop = () => {
       video.pause()
-      video.currentTime = 0.1
+      if (video.poster) video.load()
+      else video.currentTime = 0.1
     }
     link.addEventListener('pointerenter', play)
     link.addEventListener('focus', play)
@@ -66,19 +66,43 @@ export function ProjectMedia({
   }, [])
 
   let content: React.ReactNode
-  if (src) {
+  if (video?.poster) {
+    content = (
+      <div className={PORTRAIT_FRAME}>
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img
+          src={video.poster}
+          alt=""
+          aria-hidden="true"
+          className="absolute inset-0 size-full scale-125 object-cover opacity-70 blur-2xl"
+        />
+        <video
+          ref={videoRef}
+          src={video.src}
+          poster={video.poster}
+          muted
+          loop
+          playsInline
+          preload="none"
+          aria-hidden="true"
+          tabIndex={-1}
+          className="relative mx-auto h-full w-auto"
+        />
+      </div>
+    )
+  } else if (video) {
     content = (
       <div className={FRAME}>
         <video
           ref={videoRef}
-          src={`${src}#t=0.1`}
+          src={`${video.src}#t=0.1`}
           muted
           loop
           playsInline
           preload="metadata"
           aria-hidden="true"
           tabIndex={-1}
-          className="size-full object-contain"
+          className="size-full object-cover"
         />
       </div>
     )
