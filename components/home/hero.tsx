@@ -60,6 +60,8 @@ export function Hero({ dict, onSubmit, onPick }: HeroProps) {
         <Avatar
           layoutId="avatar"
           alt={dict.avatarAlt}
+          src="/avatar-smile.png"
+          hoverSrc="/avatar-wink.png"
           className="size-36 sm:size-44 lg:size-56"
           rotateX={reduce ? undefined : rotateX}
           rotateY={reduce ? undefined : rotateY}
@@ -81,7 +83,7 @@ export function Hero({ dict, onSubmit, onPick }: HeroProps) {
       <nav
         aria-label={dict.hero.topicsLabel}
         style={{ '--rise-i': 4 } as React.CSSProperties}
-        className="rise-in flex max-w-[640px] flex-wrap justify-center gap-2.5"
+        className="rise-in flex max-w-[760px] flex-wrap justify-center gap-2.5"
       >
         {TOPIC_IDS.map((topic) => (
           <button

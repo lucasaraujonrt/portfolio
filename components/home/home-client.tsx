@@ -112,6 +112,7 @@ export function HomeClient({
               <Avatar
                 layoutId="avatar"
                 alt={dict.avatarAlt}
+                src="/avatar-smile.png"
                 className="size-11"
               />
               <span className="text-base font-semibold">{dict.header.name}</span>
