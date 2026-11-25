@@ -49,7 +49,8 @@ export default function BlogLayout({
 }) {
   const pathname = usePathname()
   const portuguese = pathname.startsWith('/pt/')
-  const isIndex = pathname === '/blog'
+  const blogHome = portuguese ? '/pt/blog' : '/blog'
+  const isIndex = pathname === blogHome
 
   return (
     <div
@@ -69,7 +70,7 @@ export default function BlogLayout({
       ) : (
         <main className="mx-auto w-full max-w-[680px] flex-1">
           <div className="rise-in mb-10 flex flex-wrap items-center justify-between gap-3">
-            <Link href="/blog" className={pill}>
+            <Link href={blogHome} className={pill}>
               <ArrowLeft aria-hidden="true" size={16} />
               {portuguese ? 'Todos os textos' : 'All posts'}
             </Link>

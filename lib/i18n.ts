@@ -11,13 +11,6 @@ export const TOPIC_IDS = [
 
 export type TopicId = (typeof TOPIC_IDS)[number]
 
-/** Posts that also exist under /pt/blog. */
-export const PT_BLOG_LINKS: readonly string[] = [
-  '/blog/approval-links',
-  '/blog/reels-in-code',
-  '/blog/live-activity-expo',
-]
-
 export const PROJECT_IDS = ['inker', 'nomad', 'jarvis', 'telao'] as const
 
 export type ProjectId = (typeof PROJECT_IDS)[number]

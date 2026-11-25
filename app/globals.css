@@ -3,21 +3,31 @@
 /* Tailwind 4 maps dark: to prefers-color-scheme if this variant is deleted. */
 @custom-variant dark (&:not(*));
 
-:root { color-scheme: light; }
+:root {
+  color-scheme: light;
+}
 
 /* Hero entrance in CSS so the server HTML is visible before hydration. */
 @keyframes rise-in {
-  from { opacity: 0; transform: translateY(8px); }
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
 }
 @keyframes fade-in {
-  from { opacity: 0; }
+  from {
+    opacity: 0;
+  }
 }
 .rise-in {
   animation: rise-in 350ms cubic-bezier(0.23, 1, 0.32, 1) backwards;
   animation-delay: calc(var(--rise-i, 0) * 60ms);
 }
 @media (prefers-reduced-motion: reduce) {
-  .rise-in { animation-name: fade-in; animation-duration: 200ms; }
+  .rise-in {
+    animation-name: fade-in;
+    animation-duration: 200ms;
+  }
 }
 
 @layer base {

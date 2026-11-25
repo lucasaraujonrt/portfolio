@@ -26,7 +26,7 @@ export function Avatar({
     <motion.div
       layoutId={layoutId}
       className={cn(
-        'group relative shrink-0 overflow-hidden rounded-full border border-zinc-200 bg-zinc-100 [container-type:inline-size]',
+        'group [container-type:inline-size] relative shrink-0 overflow-hidden rounded-full border border-zinc-200 bg-zinc-100',
         className,
       )}
       style={{ transformPerspective: 700, rotateX, rotateY }}
@@ -58,7 +58,7 @@ export function Avatar({
         <span
           role="img"
           aria-label={alt}
-          className="flex size-full select-none items-center justify-center font-semibold tracking-tight text-neutral-950 text-[38cqw]"
+          className="flex size-full items-center justify-center text-[38cqw] font-semibold tracking-tight text-neutral-950 select-none"
         >
           LA
         </span>

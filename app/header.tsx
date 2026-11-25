@@ -27,7 +27,7 @@ export function Header({ portuguese = false }: { portuguese?: boolean }) {
         <Link href={home} className={navLink}>
           {portuguese ? 'Início' : 'Home'}
         </Link>
-        <Link href="/blog" className={navLink}>
+        <Link href={portuguese ? '/pt/blog' : '/blog'} className={navLink}>
           Blog
         </Link>
       </nav>
