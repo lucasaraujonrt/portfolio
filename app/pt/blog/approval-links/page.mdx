@@ -1,0 +1,123 @@
+# Aprovação humana para agentes de IA: um link de uso único e um PIN
+
+[Read in English](/blog/approval-links)
+
+Como um agente me pergunta antes de agir, e o módulo open source que saiu disso.
+
+Na Inker, um agente de IA escreve os nossos posts do Instagram. Publicar ele não pode.
+
+Quando um post fica pronto, o agente prepara a ação e eu recebo um link no celular. Eu abro, leio o post, digito um PIN de 6 dígitos e toco em Aprovar. Só então o post sai.
+
+Levei esse fluxo para o [agent-action-gate](https://github.com/lucasaraujonrt/agent-action-gate), minha biblioteca open source para ações de agente que precisam de aprovação. É a versão 0.2.0. O código do repositório é uma generalização do que a gente roda, escrito de novo e com testes próprios.
+
+<div className="my-8 flex justify-center">
+  <img
+    src="/approval-links-page.png"
+    alt="A página de aprovação no celular: o nome da ação, a entrada, o hash da entrada, um campo de PIN e dois botões"
+    className="w-full max-w-xs rounded-2xl shadow-lg"
+  />
+</div>
+
+## O que a biblioteca já fazia
+
+O gate tem três passos. O agente prepara uma ação e recebe um hash da entrada exata. Um aprovador aceita esse hash. Depois a ação roda no máximo uma vez.
+
+Ele não tinha resposta para o lado do aprovador. Quem aprova, onde, e como impedir que outra pessoa faça isso?
+
+## O modelo de ameaça
+
+O aprovador está num celular, fora do sistema em que o agente roda. Então eu assumi o seguinte:
+
+- **O link pode vazar.** Ele passa por um app de conversa. O link sozinho não pode bastar.
+- **O PIN pode ser adivinhado.** Seis dígitos são um milhão de valores. O número de tentativas precisa ser pequeno e fixo.
+- **Pedidos podem chegar ao mesmo tempo.** Dois toques, uma repetição, ou um atacante mandando 50 tentativas em paralelo.
+- **O processo pode morrer em qualquer linha.** Nenhuma queda pode deixar uma ação aprovada duas vezes, ou aprovada por ninguém.
+
+## Um link, usado uma vez
+
+`issue` cria um token aleatório de 32 bytes e guarda só o SHA-256 dele. O link funciona uma vez. Ele nunca dura mais que a ação que aprova.
+
+A aprovação fica presa ao hash da entrada do momento em que o link foi emitido. Se a entrada da ação mudar, o link antigo não aprova.
+
+Um `GET` só lê. A página não muda nenhum estado até o formulário ser enviado com o PIN.
+
+## Reserve a tentativa antes da verificação lenta
+
+O PIN é verificado com scrypt, que é lento de propósito. Isso cria uma corrida.
+
+Imagine que o código verifica o PIN primeiro e conta o erro depois. Então 50 pedidos em paralelo começam a verificação antes de qualquer erro ser contado. O limite de 5 vira um limite de 50.
+
+Por isso a tentativa é tomada antes da verificação, numa instrução só:
+
+```ts
+const reserved = this.db.prepare(`
+  UPDATE approval_links SET pin_failures=pin_failures+1
+  WHERE action_id=? AND token_hash=? AND status='open' AND pin_failures<?
+`).run(actionId, tokenHash, this.limits.maxPinFailures).changes;
+```
+
+Se nenhuma linha muda, não há tentativas sobrando e o scrypt nem roda. Um PIN correto devolve a tentativa dele.
+
+Um teste manda 50 PINs errados em paralelo e conta as chamadas ao scrypt. O resultado é 5.
+
+## O bloqueio pertence à ação
+
+Um link tem quatro estados: `open`, `used`, `locked` e `expired`. Só `open` aceita uma decisão.
+
+Cinco PINs errados bloqueiam o link e rejeitam a ação no gate. Vinte PINs errados em uma hora, somando todos os links, pausam todas as aprovações por uma hora. Juntar vários links não compra mais tentativas.
+
+A contagem de erros pertence à ação, não ao link. Emitir um link novo mantém a contagem, e uma ação bloqueada não recebe link novo.
+
+## O que uma revisão pegou
+
+Pedi a revisão da mudança a um segundo modelo, sem nenhum contexto de como ela foi construída. Ele não achou forma de aprovar duas vezes nem com PIN errado. Achou duas coisas que eu tinha deixado passar:
+
+- **Um gancho de teste que desligava o PIN.** Para contar as chamadas ao scrypt, a classe aceitava uma função de verificação customizada. Qualquer pessoa podia passar uma que sempre retornava verdadeiro. A opção saiu, e o teste agora observa a chamada de criptografia.
+- **Um link novo zerava a contagem de erros.** Em um caminho de falha, isso reabria uma ação bloqueada. É por isso que a contagem agora pertence à ação.
+
+As duas estavam na primeira versão, e todos os testes dela passavam.
+
+## O que ele não faz
+
+- Ele não diz quem aprovou. O PIN prova que alguém com o link e o PIN aprovou.
+- O PIN é um segundo fator em cima de um link secreto. Não é uma senha. Se o hash guardado vazar, seis dígitos são descobertos offline em segundos, então o hash tem que ficar num cofre de segredos.
+- Um PIN correto que disputa com quatro errados no mesmo link pode perder. Nada é aprovado por engano, mas o aprovador precisa de um link novo.
+
+## Como usar
+
+```ts
+import { ActionGate, ApprovalLinks, createApprovalHandler } from 'agent-action-gate';
+
+const gate = new ActionGate('./actions.db');
+const links = new ApprovalLinks({
+  gate,
+  pinHash: process.env.APPROVAL_PIN_HASH!,
+  path: './links.db',
+});
+
+const proposal = gate.prepare({
+  actor: 'agent',
+  action: 'send-message',
+  input: { text: 'hi' },
+  idempotencyKey: 'call-1',
+  ttlMs: 72 * 3600_000,
+});
+const { token } = links.issue(proposal.id);
+await sendToApprover(`https://approvals.example.com/approve/${proposal.id}?t=${token}`);
+
+Bun.serve({
+  fetch: createApprovalHandler(links, {
+    approver: 'phone',
+    onDecision: async (record, decision) => {
+      if (decision === 'reject') return;
+      await gate.execute(record.id, async (input) => sendMessage(input));
+    },
+  }),
+});
+```
+
+`sendToApprover` e `sendMessage` são código seu. A biblioteca não envia o link. Conversa, e-mail ou SMS é escolha sua.
+
+O handler usa só os tipos web `Request` e `Response`, então roda com `Bun.serve`.
+
+O módulo é um arquivo com 38 testes próprios: [agent-action-gate no GitHub](https://github.com/lucasaraujonrt/agent-action-gate).

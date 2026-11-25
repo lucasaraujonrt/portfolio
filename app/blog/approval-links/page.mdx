@@ -1,0 +1,123 @@
+# Human approval for AI agents: a one-time link and a PIN
+
+[Leia em português](/pt/blog/approval-links)
+
+How an agent asks me before it acts, and the open-source module that came out of it.
+
+At Inker, an AI agent writes our Instagram posts. It cannot publish them.
+
+When a post is ready, the agent prepares the action and I get a link on my phone. I open it, read the post, type a 6-digit PIN and tap Approve. Only then does the post go out.
+
+I moved that flow into [agent-action-gate](https://github.com/lucasaraujonrt/agent-action-gate), my open-source library for agent actions that need approval. It is version 0.2.0. The code in the repository is a generalization of what we run, written again with its own tests.
+
+<div className="my-8 flex justify-center">
+  <img
+    src="/approval-links-page.png"
+    alt="The approval page on a phone: the action name, its input, the input hash, a PIN field and two buttons"
+    className="w-full max-w-xs rounded-2xl shadow-lg"
+  />
+</div>
+
+## What the library already did
+
+The gate has three steps. The agent prepares an action and gets a hash of its exact input. An approver accepts that hash. Then the action runs at most once.
+
+It had no answer for the approver's side. Who approves, where, and how do you stop someone else from doing it?
+
+## The threat model
+
+The approver is on a phone, outside the system the agent runs in. So I assumed this:
+
+- **The link can leak.** It travels through a chat app. The link alone must not be enough.
+- **The PIN can be guessed.** Six digits is one million values. The number of guesses must be small and fixed.
+- **Requests can arrive at the same time.** Two taps, a retry, or an attacker sending 50 guesses in parallel.
+- **The process can die at any line.** No crash may leave an action approved twice, or approved by nobody.
+
+## One link, used once
+
+`issue` creates a random 32-byte token and stores only its SHA-256. The link works once. It never lives longer than the action it approves.
+
+The approval is tied to the input hash from the moment the link was issued. If the action's input changes, the old link cannot approve it.
+
+A `GET` only reads. The page never changes state until the form is posted with the PIN.
+
+## Reserve the attempt before the slow check
+
+The PIN is checked with scrypt, which is slow on purpose. That creates a race.
+
+Suppose the code checks the PIN first and counts the failure after. Then 50 parallel requests all start their check before any failure is counted. The limit of 5 becomes a limit of 50.
+
+So the attempt is taken before the check runs, in one statement:
+
+```ts
+const reserved = this.db.prepare(`
+  UPDATE approval_links SET pin_failures=pin_failures+1
+  WHERE action_id=? AND token_hash=? AND status='open' AND pin_failures<?
+`).run(actionId, tokenHash, this.limits.maxPinFailures).changes;
+```
+
+If no row changes, there are no attempts left and scrypt never runs. A correct PIN gives its attempt back.
+
+A test sends 50 wrong PINs in parallel and counts the scrypt calls. The count is 5.
+
+## The lockout belongs to the action
+
+A link has four states: `open`, `used`, `locked` and `expired`. Only `open` accepts a decision.
+
+Five wrong PINs lock the link and reject the action in the gate. Twenty wrong PINs in one hour, across all links, pause every approval for an hour. Collecting many links does not buy more guesses.
+
+The failure count belongs to the action, not to the link. Issuing a new link keeps the count, and a locked action cannot get a new link.
+
+## What a review caught
+
+I had the change reviewed by a second model that had no context about how it was built. It found no way to approve twice or with a wrong PIN. It did find two things I had missed:
+
+- **A test hook that turned the PIN off.** To count scrypt calls, the class accepted a custom verify function. Anyone could pass one that always returned true. The option is gone, and the test now spies on the crypto call.
+- **A new link reset the failure count.** In one failure path, that reopened a locked action. This is why the count now belongs to the action.
+
+Both were in the first version, and all its tests passed.
+
+## What it does not do
+
+- It does not say who approved. The PIN proves that someone with the link and the PIN approved.
+- The PIN is a second factor on top of a secret link. It is not a password. If the stored hash leaks, six digits can be found offline in seconds, so the hash belongs in a secret store.
+- A correct PIN that races four wrong ones on the same link can lose. Nothing is approved by mistake, but the approver needs a new link.
+
+## Using it
+
+```ts
+import { ActionGate, ApprovalLinks, createApprovalHandler } from 'agent-action-gate';
+
+const gate = new ActionGate('./actions.db');
+const links = new ApprovalLinks({
+  gate,
+  pinHash: process.env.APPROVAL_PIN_HASH!,
+  path: './links.db',
+});
+
+const proposal = gate.prepare({
+  actor: 'agent',
+  action: 'send-message',
+  input: { text: 'hi' },
+  idempotencyKey: 'call-1',
+  ttlMs: 72 * 3600_000,
+});
+const { token } = links.issue(proposal.id);
+await sendToApprover(`https://approvals.example.com/approve/${proposal.id}?t=${token}`);
+
+Bun.serve({
+  fetch: createApprovalHandler(links, {
+    approver: 'phone',
+    onDecision: async (record, decision) => {
+      if (decision === 'reject') return;
+      await gate.execute(record.id, async (input) => sendMessage(input));
+    },
+  }),
+});
+```
+
+`sendToApprover` and `sendMessage` are your own code. The library does not send the link. Chat, email or SMS is your choice.
+
+The handler uses only the web `Request` and `Response` types, so it runs under `Bun.serve`.
+
+The module is one file with 38 tests of its own: [agent-action-gate on GitHub](https://github.com/lucasaraujonrt/agent-action-gate).

@@ -145,6 +145,13 @@ export const BACKGROUND: readonly BackgroundItem[] = [
 
 export const BLOG_POSTS: BlogPost[] = [
   {
+    title: 'Human approval for AI agents: a one-time link and a PIN',
+    description:
+      'How an agent asks me before it acts: a one-time link, a 6-digit PIN, lockouts and a race-safe attempt counter, open source in agent-action-gate.',
+    link: '/blog/approval-links',
+    uid: 'blog-9',
+  },
+  {
     title: 'Instagram Reels as React components',
     description:
       'How we build product reels in Remotion: beats sized by the narration, a small motion vocabulary, and sound effects placed by frame.',
