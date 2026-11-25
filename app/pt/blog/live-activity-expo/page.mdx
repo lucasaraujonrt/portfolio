@@ -1,0 +1,178 @@
+# Live Activity e App Intents num app Expo, sem ejetar
+
+[Read in English](/blog/live-activity-expo)
+
+Parte 2 da história do widget: um cartão na tela de bloqueio, com botões que funcionam, controlado pelo React Native.
+
+Na [parte 1](/blog/inker-widgets) (em inglês) eu coloquei um widget nativo de iOS no app da Inker com o `@bacons/apple-targets`. Esta parte vai um passo além: uma Live Activity que mostra a próxima sessão do tatuador na tela de bloqueio, com botões que funcionam com o app fechado.
+
+A feature está na nossa branch `dev`, atrás de uma feature flag. Tudo o que está abaixo vem desse código.
+
+<div className="my-8 flex justify-center">
+  <img
+    src="/live-activity-lock-screen.png"
+    alt="Cartão da Live Activity na tela de bloqueio, antes de a sessão começar"
+    className="w-full max-w-md rounded-2xl shadow-lg"
+  />
+</div>
+
+## O que ela faz
+
+O cartão tem três fases:
+
+- **Antes:** nome do cliente, horário, contagem regressiva e um botão "Começar agora".
+- **Durante:** tempo decorrido, "+15 min" e "Terminei".
+- **Depois:** duração da sessão e atalhos para cobrar o restante ou pedir avaliação.
+
+O tatuador está tatuando, então toda ação precisa funcionar pela tela de bloqueio.
+
+## Problema 1: um módulo Expo não consegue importar o Swift do seu app
+
+O pedido ao ActivityKit precisa sair do processo do app. O tipo `ActivityAttributes` também precisa ser o mesmo no app e na extensão do widget, senão a extensão não encontra a atividade.
+
+Por isso o gerenciador mora no target do app, numa pasta que a extensão do widget também compila. Só que um módulo Expo é um CocoaPod, e um pod não consegue importar Swift do target do app.
+
+O módulo chama o gerenciador pelo runtime do Objective-C:
+
+```swift
+AsyncFunction("reconcile") { (plan: String?) -> String in
+  guard let manager = NSClassFromString("InkerSessionActivityManager") else {
+    return "unsupported"
+  }
+  let selector = NSSelectorFromString("reconcile:completion:")
+  guard (manager as AnyObject).responds(to: selector) else { return "unsupported" }
+  return await withCheckedContinuation { continuation in
+    let completion: @convention(block) (NSString) -> Void = {
+      continuation.resume(returning: $0 as String)
+    }
+    _ = (manager as AnyObject).perform(
+      selector, with: plan as NSString?, with: unsafeBitCast(completion, to: AnyObject.self))
+  }
+}
+```
+
+Do outro lado, o gerenciador é uma classe `@objc` comum:
+
+```swift
+@objc(InkerSessionActivityManager)
+final class InkerSessionActivityManager: NSObject {
+  @objc static func reconcile(_ plan: NSString?, completion: @escaping (NSString) -> Void) {
+    Task {
+      let result = await run(plan as String?)
+      completion(result as NSString)
+    }
+  }
+}
+```
+
+A ponte inteira tem 27 linhas. O módulo não sabe nada sobre sessões. Ele passa uma string JSON e devolve uma string de resultado.
+
+## Problema 2: o JavaScript não deveria guardar estado nativo
+
+Uma API com `start`, `update` e `end` obrigaria o JavaScript a lembrar o que está na tela de bloqueio, e essa memória some a cada abertura a frio.
+
+A API é uma única chamada idempotente:
+
+```ts
+interface SessionLiveActivityNative {
+  /** Plan as JSON, or null to end every session activity. Idempotent: safe on every write. */
+  reconcile(plan: string | null): Promise<LiveActivityResult>;
+}
+```
+
+O JavaScript diz o que quer: um plano, `'idle'` (nada planejado agora) ou `null` (flag desligada ou usuário deslogado). O lado nativo compara isso com `Activity.activities` e devolve o que fez: `started`, `scheduled`, `kept`, `updated`, `ended`, `none` ou `unsupported`.
+
+O app chama isso toda vez que grava os dados do widget. Uma chamada repetida com o mesmo plano devolve `kept`. `scheduled` significa que a sessão ainda está a mais de 30 minutos e o código pediu ao sistema para iniciar o cartão depois, nas versões do iOS em que esse pedido existe.
+
+Dois casos pediram mais cuidado:
+
+- **Um cartão que o tatuador dispensou não pode voltar.** O gerenciador guarda `sessionId@horárioDeInício` de cada atividade que pediu. Uma sessão remarcada para outro horário conta como entrada nova.
+- **Um cartão finalizado mantém a própria hora.** Ele nunca é reiniciado, a não ser que o modo privacidade mude e o cartão precise ser mascarado.
+
+## Problema 3: o cartão precisa mudar sem nenhum código rodando
+
+Uma Live Activity não é um processo em execução. A contagem regressiva e a barra de progresso andam sozinhas, porque são timers do sistema (`Text(timerInterval:)`, `ProgressView(timerInterval:)`). Mas o layout só muda quando você atualiza a atividade ou quando ela expira.
+
+Então a data de expiração carrega a troca de fase:
+
+```swift
+/// The phase to draw. A time-driven re-render only happens when the activity goes stale, so
+/// `staleDate` carries the schedule: stale `before` means the session started, stale `during`
+/// means it ran out.
+func effectivePhase(_ state: ContentState, isStale: Bool) -> SessionPhase {
+  switch state.phase {
+  case .before: return isStale ? .during : .before
+  case .during: return isStale ? .after : .during
+  case .after: return .after
+  }
+}
+
+func staleDate(for state: ContentState) -> Date? {
+  switch state.phase {
+  case .before: return startsAt
+  case .during: return end(state)
+  case .after: return nil
+  }
+}
+```
+
+A view lê `context.isStale` e desenha a fase seguinte. O cartão passa de "antes" para "durante" no horário da sessão, sem push e sem tarefa em segundo plano.
+
+## Problema 4: botões que rodam sem JavaScript
+
+Cada botão é um `LiveActivityIntent`. O mesmo arquivo é compilado nos dois targets: a extensão precisa do tipo para o `Button(intent:)`, e o intent altera a atividade.
+
+```swift
+struct ExtendSessionIntent: LiveActivityIntent {
+  static var title: LocalizedStringResource = "Mais 15 minutos"
+  static var openAppWhenRun = false
+
+  @Parameter(title: "Sessão") var sessionId: String
+
+  func perform() async throws -> some IntentResult {
+    LiveActivityCounter.increment("extend")
+    for activity in SessionActivityLookup.activities(sessionId) {
+      var state = activity.content.state
+      // A `before` activity whose stale date passed is drawn as "during": make that real.
+      if state.phase == .before { state.phase = .during }
+      guard state.phase == .during else { continue }
+      state.extraMinutes += 15
+      await activity.update(
+        ActivityContent(state: state, staleDate: activity.attributes.staleDate(for: state)))
+    }
+    return .result()
+  }
+}
+```
+
+Não há runtime do React Native envolvido, então também não há SDK de analytics. Cada intent soma um num contador no App Group, e o app envia os eventos na próxima vez que abre.
+
+## Problema 5: atualização OTA chega em binário antigo
+
+A gente publica JavaScript por OTA. Um bundle novo pode cair num binário compilado antes de o módulo existir.
+
+```ts
+/** Null on binaries built before this module existed (OTA reaches old binaries) and off iOS. */
+export const SessionLiveActivity =
+  requireOptionalNativeModule<SessionLiveActivityNative>('SessionLiveActivity');
+```
+
+Quem chama trata `null` como "feature desligada" e avisa o analytics uma vez. Uma chamada que falha nunca quebra a gravação do widget.
+
+## O que me custou um ciclo de build cada
+
+- **A tela de bloqueio corta o cartão em cerca de 160 pt.** O primeiro desenho da fase "depois" ficou alto demais. Desenhe dentro desse limite desde o início.
+- **Um intent em segundo plano não abre outro app.** Os botões que abrem o WhatsApp usam um `Link` para um deep link, e o app abre o WhatsApp.
+- **`layoutPriority` com `maxWidth: .infinity` no botão principal espremeu os outros até sumirem.** Passei a dar largura explícita a cada botão.
+- **`Text(timerInterval:)` sempre mostra os segundos.**
+- **A Siri não roteou as frases do `AppShortcutsProvider`** no meu aparelho de teste. Um atalho com nome dado pelo usuário funcionou. Também deixo a palavra "agenda" fora das frases, porque a Siri manda ela para o app Calendário.
+
+## Limites
+
+- Só iOS. O Android ainda não tem equivalente aqui.
+- Sem atualização por push (`pushType: nil`). Fora os timers do sistema, o cartão só muda pelo app, por um botão ou pela data de expiração.
+- Nos sistemas em que o código não consegue agendar o início para depois, a atividade começa na próxima vez que o app fica em primeiro plano, dentro dos 30 minutos antes da sessão.
+
+## Resumo
+
+Dá para ficar no fluxo gerenciado do Expo e ainda escrever as partes nativas em Swift de verdade. Mantenha o módulo fino, dê ao JavaScript uma única chamada idempotente e deixe o estado com o lado nativo.
