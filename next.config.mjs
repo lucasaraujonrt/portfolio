@@ -8,6 +8,12 @@ const nextConfig = {
 
 const withMDX = createMDX({
   extension: /\.mdx?$/,
+  options: {
+    // Plugin names as strings: Turbopack needs serializable loader options.
+    rehypePlugins: [
+      ['rehype-pretty-code', { theme: 'github-dark', keepBackground: true }],
+    ],
+  },
 });
 
 export default withMDX(nextConfig);
