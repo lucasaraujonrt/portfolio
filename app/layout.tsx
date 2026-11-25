@@ -1,8 +1,7 @@
 import type { Metadata, Viewport } from 'next'
 import { Geist, Geist_Mono } from 'next/font/google'
 import './globals.css'
-import { Header } from './header'
-import { Footer } from './footer'
+import { WEBSITE_URL } from '@/lib/constants'
 
 export const viewport: Viewport = {
   width: 'device-width',
@@ -12,9 +11,10 @@ export const viewport: Viewport = {
 }
 
 export const metadata: Metadata = {
+  metadataBase: new URL(WEBSITE_URL),
   title: 'Lucas Araujo',
   description:
-    'Software engineer at Nomad and founder of Inker. Open-source tools for coding agents.',
+    'Software engineer and founder of Inker, previously at Nomad. Open-source tools for coding agents.',
 }
 
 const geist = Geist({
@@ -33,17 +33,11 @@ export default function RootLayout({
   children: React.ReactNode
 }>) {
   return (
-    <html lang="en">
+    <html lang="pt-BR">
       <body
         className={`${geist.variable} ${geistMono.variable} bg-white text-zinc-900 tracking-tight antialiased`}
       >
-        <div className="flex min-h-screen w-full flex-col font-[family-name:var(--font-inter-tight)]">
-          <div className="relative mx-auto w-full max-w-screen-sm flex-1 px-4 pt-20">
-            <Header />
-            {children}
-            <Footer />
-          </div>
-        </div>
+        <div className="flex min-h-screen w-full flex-col">{children}</div>
       </body>
     </html>
   )

@@ -87,7 +87,7 @@ export const PROJECTS: Project[] = [
   },
   {
     name: 'Nomad Explorer',
-    description: 'Mobile implementation of the Nomad Explorer credit card.',
+    description: 'Led the build of the credit card inside the Nomad app, from concept to launch.',
     link: 'https://www.nomadglobal.com/nomad-explorer-infinite',
     video: '/nomad-explorer.mp4',
     id: 'project1',
@@ -106,8 +106,8 @@ export const WORK_EXPERIENCE: WorkExperience[] = [
   {
     company: 'Nomad Global',
     title: 'Software Engineer',
-    start: '2023',
-    end: 'Present',
+    start: '2024',
+    end: '2026',
     link: 'https://nomadglobal.com',
     id: 'work1',
   },
@@ -122,8 +122,8 @@ export const WORK_EXPERIENCE: WorkExperience[] = [
   {
     company: 'CI&T',
     title: 'Front-end Developer',
-    start: '2022 - Jan',
-    end: '2022 - Dec',
+    start: 'Jan 2022',
+    end: 'Dec 2022',
     link: 'https://ciandt.com/',
     id: 'work4',
   },
