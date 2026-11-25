@@ -4,6 +4,7 @@ import { motion } from 'motion/react'
 import { ArrowUpRight } from 'lucide-react'
 import {
   PROJECT_IDS,
+  PT_BLOG_LINKS,
   TOPIC_IDS,
   type Dict,
   type TopicId,
@@ -39,12 +40,7 @@ function ExternalRow({
   description: string
 }) {
   return (
-    <a
-      href={href}
-      target="_blank"
-      rel="noopener noreferrer"
-      className={card}
-    >
+    <a href={href} target="_blank" rel="noopener noreferrer" className={card}>
       <span className="flex items-center gap-1.5 text-lg font-semibold tracking-[-0.01em]">
         {title}
         <ArrowUpRight aria-hidden="true" size={16} className="text-zinc-500" />
@@ -168,31 +164,40 @@ function OpenSourceAnswer({ dict }: { dict: Dict }) {
 }
 
 function WritingAnswer({ dict }: { dict: Dict }) {
-  const { text, englishTag } = dict.answers.writing
+  const { text, englishTag, portugueseTag } = dict.answers.writing
   return (
     <>
       <Lead>{text}</Lead>
       <motion.ul variants={stagger(0, 0.06)} className="flex flex-col gap-3">
-        {BLOG_POSTS.map((post) => (
-          <motion.li key={post.uid} variants={rise}>
-            <Link href={post.link} className={card} lang="en">
-              <span className="text-lg font-semibold tracking-[-0.01em]">
-                {post.title}
-              </span>
-              <span className="text-[15px] text-zinc-700">
-                {post.description}
-              </span>
-              {englishTag && (
-                <span
-                  lang={dict.htmlLang}
-                  className="mt-1 w-fit rounded-full border border-zinc-300 px-2.5 py-0.5 text-xs text-zinc-700"
-                >
-                  {englishTag}
+        {BLOG_POSTS.map((post) => {
+          const inPortuguese =
+            portugueseTag !== null && PT_BLOG_LINKS.includes(post.link)
+          const tag = inPortuguese ? portugueseTag : englishTag
+          return (
+            <motion.li key={post.uid} variants={rise}>
+              <Link
+                href={inPortuguese ? `/pt${post.link}` : post.link}
+                className={card}
+                lang="en"
+              >
+                <span className="text-lg font-semibold tracking-[-0.01em]">
+                  {post.title}
                 </span>
-              )}
-            </Link>
-          </motion.li>
-        ))}
+                <span className="text-[15px] text-zinc-700">
+                  {post.description}
+                </span>
+                {tag && (
+                  <span
+                    lang={dict.htmlLang}
+                    className="mt-1 w-fit rounded-full border border-zinc-300 px-2.5 py-0.5 text-xs text-zinc-700"
+                  >
+                    {tag}
+                  </span>
+                )}
+              </Link>
+            </motion.li>
+          )
+        })}
       </motion.ul>
     </>
   )
@@ -260,9 +265,7 @@ export function TopicChips({
           className={chip}
           onClick={() => onPick(topic)}
         >
-          {asQuestions
-            ? dict.topics[topic].question
-            : dict.topics[topic].label}
+          {asQuestions ? dict.topics[topic].question : dict.topics[topic].label}
         </button>
       ))}
     </motion.nav>

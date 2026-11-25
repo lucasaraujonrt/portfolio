@@ -11,6 +11,12 @@ export const TOPIC_IDS = [
 
 export type TopicId = (typeof TOPIC_IDS)[number]
 
+/** Posts that also exist under /pt/blog. */
+export const PT_BLOG_LINKS: readonly string[] = [
+  '/blog/reels-in-code',
+  '/blog/live-activity-expo',
+]
+
 export const PROJECT_IDS = ['inker', 'jarvis', 'telao', 'nomad'] as const
 
 export type ProjectId = (typeof PROJECT_IDS)[number]
@@ -66,7 +72,10 @@ export type Dict = {
     'open-source': Answer & {
       descriptions: Record<string, string> | null
     }
-    writing: Answer & { englishTag: string | null }
+    writing: Answer & {
+      englishTag: string | null
+      portugueseTag: string | null
+    }
     contact: Answer & { emailLabel: string; hiring: string }
   }
   fallback: { text: string }
@@ -171,6 +180,7 @@ const en: Dict = {
     writing: {
       text: 'I write about things I have built. These are the posts so far.',
       englishTag: null,
+      portugueseTag: null,
     },
     contact: {
       text: 'Email is the fastest way. I am also on GitHub and LinkedIn.',
@@ -207,7 +217,8 @@ const en: Dict = {
     nomad: {
       kicker: 'Nomad · 2024 to 2026',
       title: 'Nomad Explorer',
-      short: 'Led the build of the credit card inside the Nomad app, from concept to launch.',
+      short:
+        'Led the build of the credit card inside the Nomad app, from concept to launch.',
       long: 'Led the build of the credit card inside the Nomad app, from concept to launch, with PCI-compliant card flows and Apple Wallet and Google Wallet push provisioning.',
     },
   },
@@ -324,6 +335,7 @@ const pt: Dict = {
     writing: {
       text: 'Escrevo sobre o que eu mesmo construí. Estes são os textos até agora.',
       englishTag: 'em inglês',
+      portugueseTag: 'em português',
     },
     contact: {
       text: 'O e-mail é o caminho mais rápido. Também estou no GitHub e no LinkedIn.',
@@ -360,7 +372,8 @@ const pt: Dict = {
     nomad: {
       kicker: 'Nomad · 2024 a 2026',
       title: 'Nomad Explorer',
-      short: 'Liderei a construção do cartão de crédito dentro do app da Nomad, do conceito ao lançamento.',
+      short:
+        'Liderei a construção do cartão de crédito dentro do app da Nomad, do conceito ao lançamento.',
       long: 'Liderei a construção do cartão de crédito dentro do app da Nomad, do conceito ao lançamento, com fluxos de cartão em conformidade com PCI e provisionamento em Apple Wallet e Google Wallet.',
     },
   },
@@ -493,10 +506,7 @@ const KEYWORDS: Record<TopicId, readonly string[]> = {
 }
 
 function normalize(value: string): string {
-  return value
-    .toLowerCase()
-    .normalize('NFD')
-    .replace(/[̀-ͯ]/g, '')
+  return value.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '')
 }
 
 export function matchTopic(input: string): TopicId | null {
