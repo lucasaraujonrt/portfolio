@@ -1,0 +1,178 @@
+# Live Activities and App Intents in an Expo app, without ejecting
+
+[Leia em português](/pt/blog/live-activity-expo)
+
+Part 2 of the widget story: a lock-screen card with working buttons, driven from React Native.
+
+In [part 1](/blog/inker-widgets) I added a native iOS widget to the Inker app with `@bacons/apple-targets`. This part goes one step further: a Live Activity that shows the tattoo artist's next session on the lock screen, with buttons that work while the app is closed.
+
+Everything below is from the app's code.
+
+<div className="my-8 flex justify-center">
+  <img
+    src="/live-activity-lock-screen.png"
+    alt="Live Activity card on the lock screen, before the session starts"
+    className="w-full max-w-md rounded-2xl shadow-lg"
+  />
+</div>
+
+## What it does
+
+The card has three phases:
+
+- **Before:** client name, start time, a countdown, and a "Start now" button.
+- **During:** elapsed time, "+15 minutes" and "Finished".
+- **After:** session length and shortcuts to charge the balance or ask for a review.
+
+The artist is tattooing, so every action has to work from the lock screen.
+
+## Problem 1: an Expo module cannot import your app's Swift
+
+ActivityKit requests must come from the app process. The `ActivityAttributes` type must also be the same type in the app and in the widget extension, or the extension cannot find the activity.
+
+So the manager lives in the app target, in a folder that the widget extension also compiles. But an Expo module is a CocoaPod, and a pod cannot import Swift from the app target.
+
+The module calls the manager through the Objective-C runtime instead:
+
+```swift
+AsyncFunction("reconcile") { (plan: String?) -> String in
+  guard let manager = NSClassFromString("InkerSessionActivityManager") else {
+    return "unsupported"
+  }
+  let selector = NSSelectorFromString("reconcile:completion:")
+  guard (manager as AnyObject).responds(to: selector) else { return "unsupported" }
+  return await withCheckedContinuation { continuation in
+    let completion: @convention(block) (NSString) -> Void = {
+      continuation.resume(returning: $0 as String)
+    }
+    _ = (manager as AnyObject).perform(
+      selector, with: plan as NSString?, with: unsafeBitCast(completion, to: AnyObject.self))
+  }
+}
+```
+
+On the other side, the manager is a plain `@objc` class:
+
+```swift
+@objc(InkerSessionActivityManager)
+final class InkerSessionActivityManager: NSObject {
+  @objc static func reconcile(_ plan: NSString?, completion: @escaping (NSString) -> Void) {
+    Task {
+      let result = await run(plan as String?)
+      completion(result as NSString)
+    }
+  }
+}
+```
+
+The whole bridge is 27 lines. The module knows nothing about sessions. It passes a JSON string and returns a result string.
+
+## Problem 2: JavaScript should not track native state
+
+A `start` / `update` / `end` API would make JavaScript remember what is on the lock screen, and that memory is gone after every cold start.
+
+The API is one idempotent call instead:
+
+```ts
+interface SessionLiveActivityNative {
+  /** Plan as JSON, or null to end every session activity. Idempotent: safe on every write. */
+  reconcile(plan: string | null): Promise<LiveActivityResult>;
+}
+```
+
+JavaScript says what it wants: a plan, `'idle'` (nothing planned now), or `null` (flag off or signed out). The native side compares that with `Activity.activities` and returns what it did: `started`, `scheduled`, `kept`, `updated`, `ended`, `none` or `unsupported`.
+
+The app calls it every time it writes widget data. A repeat call with the same plan returns `kept`. `scheduled` means the session is still more than 30 minutes away and the code asked the system to start the card later, on OS versions where that request is available.
+
+Two cases needed extra care:
+
+- **A card the artist swiped away must not come back.** The manager stores `sessionId@startTime` for each activity it requested. A session moved to another time is a new entry.
+- **A finished card keeps its own hour.** It is never restarted, unless privacy mode changed and the card must be masked.
+
+## Problem 3: the card must change with no code running
+
+A Live Activity is not a running process. The countdown and the progress bar tick by themselves, because they are system timers (`Text(timerInterval:)`, `ProgressView(timerInterval:)`). But the layout only changes when you update the activity or when it goes stale.
+
+So the stale date carries the phase change:
+
+```swift
+/// The phase to draw. A time-driven re-render only happens when the activity goes stale, so
+/// `staleDate` carries the schedule: stale `before` means the session started, stale `during`
+/// means it ran out.
+func effectivePhase(_ state: ContentState, isStale: Bool) -> SessionPhase {
+  switch state.phase {
+  case .before: return isStale ? .during : .before
+  case .during: return isStale ? .after : .during
+  case .after: return .after
+  }
+}
+
+func staleDate(for state: ContentState) -> Date? {
+  switch state.phase {
+  case .before: return startsAt
+  case .during: return end(state)
+  case .after: return nil
+  }
+}
+```
+
+The view reads `context.isStale` and draws the next phase. The card moves from "before" to "during" at the session's start time with no push and no background task.
+
+## Problem 4: buttons that run without JavaScript
+
+Each button is a `LiveActivityIntent`. The same file is compiled into both targets: the extension needs the type for `Button(intent:)`, and the intent changes the activity.
+
+```swift
+struct ExtendSessionIntent: LiveActivityIntent {
+  static var title: LocalizedStringResource = "Mais 15 minutos"
+  static var openAppWhenRun = false
+
+  @Parameter(title: "Sessão") var sessionId: String
+
+  func perform() async throws -> some IntentResult {
+    LiveActivityCounter.increment("extend")
+    for activity in SessionActivityLookup.activities(sessionId) {
+      var state = activity.content.state
+      // A `before` activity whose stale date passed is drawn as "during": make that real.
+      if state.phase == .before { state.phase = .during }
+      guard state.phase == .during else { continue }
+      state.extraMinutes += 15
+      await activity.update(
+        ActivityContent(state: state, staleDate: activity.attributes.staleDate(for: state)))
+    }
+    return .result()
+  }
+}
+```
+
+No React Native runtime is involved, so there is no analytics SDK either. Each intent adds one to a counter in the App Group, and the app sends the events the next time it opens.
+
+## Problem 5: OTA updates reach old binaries
+
+We ship JavaScript over the air. A new bundle can land on a binary built before the module existed.
+
+```ts
+/** Null on binaries built before this module existed (OTA reaches old binaries) and off iOS. */
+export const SessionLiveActivity =
+  requireOptionalNativeModule<SessionLiveActivityNative>('SessionLiveActivity');
+```
+
+The caller treats `null` as "feature off" and reports it once to analytics. A failed call never breaks the widget write.
+
+## What cost me a build cycle each
+
+- **The lock screen cuts the card at about 160 pt.** The first "after" design was too tall. Design inside that limit from the start.
+- **A background intent cannot open another app.** Buttons that open WhatsApp use a `Link` to a deep link, and the app opens WhatsApp.
+- **`layoutPriority` plus `maxWidth: .infinity` on the main button squeezed the others until they disappeared.** I gave each button an explicit width.
+- **`Text(timerInterval:)` always shows seconds.**
+- **Siri did not route the phrases from `AppShortcutsProvider`** on my test device. A shortcut the user named worked. I also keep the word "agenda" out of the phrases, because Siri sends it to the Calendar app.
+
+## Limits
+
+- iOS only. Android has no equivalent here yet.
+- No push updates (`pushType: nil`). Apart from the system timers, the card only changes from the app, from a button, or from the stale date.
+- On systems where the code cannot schedule a start for later, the activity starts the next time the app is in front, inside the 30 minutes before the session.
+
+## Takeaway
+
+You can stay in the managed Expo workflow and still write the native parts in real Swift. Keep the module thin, give JavaScript one idempotent call, and let the native side own the state.

@@ -145,6 +145,20 @@ export const BACKGROUND: readonly BackgroundItem[] = [
 
 export const BLOG_POSTS: BlogPost[] = [
   {
+    title: 'Instagram Reels as React components',
+    description:
+      'How we build product reels in Remotion: beats sized by the narration, a small motion vocabulary, and sound effects placed by frame.',
+    link: '/blog/reels-in-code',
+    uid: 'blog-8',
+  },
+  {
+    title: 'Live Activities and App Intents in an Expo app',
+    description:
+      'A lock-screen card with working buttons, driven from React Native: the Objective-C runtime bridge, one idempotent call, and the stale date as the clock.',
+    link: '/blog/live-activity-expo',
+    uid: 'blog-7',
+  },
+  {
     title: 'Building Native iOS Widgets with Swift in Expo',
     description:
       'How I used @bacons/apple-targets to build native SwiftUI widgets for React Native without ejecting from Expo.',

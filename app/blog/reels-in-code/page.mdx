@@ -1,0 +1,162 @@
+# Instagram Reels as React components: the narration drives the timeline
+
+[Leia em português](/pt/blog/reels-in-code)
+
+How we build product reels for Inker in Remotion, and which parts are code and which are not.
+
+We make the product reels for Inker in code. The widgets reel is 18 seconds, 1080×1920, 30 fps, and it is one React file of 392 lines.
+
+This post shows how that file is organized. It is the reel for the feature from [the widgets post](/blog/inker-widgets).
+
+<div className="my-8 flex justify-center">
+  <img
+    src="/reels-in-code-frames.png"
+    alt="Four frames of the reel: the mascot flies in and pastes the widgets on an empty home screen"
+    className="w-full rounded-2xl shadow-lg"
+  />
+</div>
+
+## What is code, and what is not
+
+I want to be exact about this, because "video made in code" can sound bigger than it is.
+
+- **Code:** layout, typography, every animation, the timeline, and where each sound plays.
+- **Recorded:** the app footage. It is the real app running in the iOS simulator with demo data.
+- **Generated:** the voice is text-to-speech, and the music is a generated track.
+- **Synthesized:** the six sound effects. They are short mono files, 60 to 500 ms, with no sample library.
+
+So the code does not replace the footage. It replaces the video editor.
+
+## Why not a video editor
+
+The first draft was a plain cut made with ffmpeg: clips, captions, music. It was rejected for not looking like our product.
+
+Version 2 added motion. Version 3 added a small sound for every action. That one was approved, and it became the template for every new video.
+
+Each round was a code change and a new render. Nobody dragged clips on a timeline.
+
+## The narration drives the timeline
+
+The reel has five beats. Each beat has one line of narration.
+
+A fixed length per beat does not work: a short line leaves dead air, and a long line gets cut. So the beat lengths come from the audio files:
+
+```tsx
+// Narration lengths (s) after trim + atempo 1.08.
+// A beat lasts the line + a breath, never under MIN.
+const NARR = [1.56, 2.75, 2.7, 2.48, 3.2];
+const MIN = [2.4, 4.4, 3.3, 3.4, 3.6];
+
+const B = NARR.reduce<number[]>((acc, d, i) => {
+  const beat = Math.max(s(d) + 16, s(MIN[i]));
+  const tail = i === NARR.length - 1 ? 24 : 0;
+  return [...acc, acc[i] + beat + tail];
+}, [0]);
+
+export const RW_DURATION = B[NARR.length];
+```
+
+`s()` converts seconds to frames. `B` holds the start frame of each beat, and the last value is the length of the whole video.
+
+When a line of narration changes, I change one number. Every later beat moves, and so does everything inside it.
+
+## A beat is a component
+
+Each beat is a React component that only knows its own local frame. The root places them one after another:
+
+```tsx
+const BEATS = [B1, B2, B3, B4, B5];
+// The outgoing beat fades over the first frames of the next one,
+// so a cut never dips to an empty frame.
+const OVERLAP = 7;
+
+{BEATS.map((_, i) => {
+  const last = i === BEATS.length - 1;
+  const length = B[i + 1] - B[i] + (last ? 0 : OVERLAP);
+  return (
+    <Sequence key={i} from={B[i]} durationInFrames={length}>
+      <Beat i={i} />
+    </Sequence>
+  );
+})}
+```
+
+Inside a `Sequence`, frame 0 is the start of that beat. So a beat says "the narration starts at frame 6", and it stays true wherever the beat lands.
+
+The 7-frame overlap is there for the cuts. Without it, a cut can dip to a frame that shows only the background.
+
+## A small motion vocabulary
+
+All the motion uses the same few functions:
+
+```ts
+export const ENTER = 12;
+export const EXIT = 7;
+export const STAGGER = 2;
+
+/** 0→1 entering at `at`. */
+export const inP = (f: number, at: number, dur = ENTER) =>
+  interpolate(f, [at, at + dur], [0, 1], { ...clamp, easing: EASE_OUT });
+
+/** 1→0 leaving at `at`. */
+export const outP = (f: number, at: number, dur = EXIT) =>
+  interpolate(f, [at, at + dur], [1, 0], { ...clamp, easing: EASE_OUT });
+```
+
+The rules are short:
+
+- Things enter in 12 frames and leave in 7. Leaving is faster than entering.
+- Everything is a fade plus a short move. There is no spring and no bounce.
+- Items in a group start 2 frames apart.
+
+With one vocabulary, a new beat looks like the others without anyone tuning it.
+
+## Impact: a ring, sparks and a shake
+
+When the mascot pastes a widget on the home screen, three things happen on the same frame: a ring grows out of the slot, pixel sparks fly off the edges, and the phone shakes.
+
+The shake is one expression:
+
+```tsx
+// Phone shake on impact.
+const d = f - FLY.slam;
+const shake = d >= 0 && d < 10 ? Math.sin(d * 2.6) * (10 - d) * 1.2 : 0;
+```
+
+It is a sine wave that fades to zero in 10 frames. The value goes into a `translate` on the phone.
+
+## Sound placed by frame
+
+The sound effects are the part people notice least and feel most. Each one is a component with a frame number:
+
+```tsx
+/** Micro sound effect (synthesized in public/reel-widgets/sfx). */
+type SfxProps = { at: number; name: string; vol?: number };
+
+const Sfx: React.FC<SfxProps> = ({ at, name, vol = 0.5 }) => (
+  <Sequence from={Math.max(0, at)} layout="none">
+    <Audio src={A(`sfx/${name}.wav`)} volume={vol} />
+  </Sequence>
+);
+```
+
+The reel uses it 16 times, with six sounds: click, tap, pop, whoosh, coin and sparkle.
+
+The sound sits next to the animation it belongs to, with the same frame number. If I move the animation, I move the sound in the same line of the diff.
+
+## Safe zones are part of the layout
+
+Instagram draws its own interface over a reel. In a 1080×1920 frame we keep nothing important in:
+
+- the top 220 px, where the tabs are;
+- the bottom 420 px, where the caption and buttons are;
+- the right 120 px, where the action buttons are.
+
+We learned this from a reel where a label ended up under the tabs. Now we check the still frames against those margins before rendering.
+
+## What I would keep
+
+- Let the audio set the timeline. Do not fit the audio to a fixed grid.
+- Make each beat a component with its own local frame.
+- Keep the motion vocabulary small and reuse it.
+- Put each sound next to the animation it belongs to.
