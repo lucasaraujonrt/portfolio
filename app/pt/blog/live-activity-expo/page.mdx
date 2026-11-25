@@ -76,7 +76,7 @@ A API é uma única chamada idempotente:
 ```ts
 interface SessionLiveActivityNative {
   /** Plan as JSON, or null to end every session activity. Idempotent: safe on every write. */
-  reconcile(plan: string | null): Promise<LiveActivityResult>;
+  reconcile(plan: string | null): Promise<LiveActivityResult>
 }
 ```
 
@@ -154,7 +154,7 @@ A gente publica JavaScript por OTA. Um bundle novo pode cair num binário compil
 ```ts
 /** Null on binaries built before this module existed (OTA reaches old binaries) and off iOS. */
 export const SessionLiveActivity =
-  requireOptionalNativeModule<SessionLiveActivityNative>('SessionLiveActivity');
+  requireOptionalNativeModule<SessionLiveActivityNative>('SessionLiveActivity')
 ```
 
 Quem chama trata `null` como "feature desligada" e avisa o analytics uma vez. Uma chamada que falha nunca quebra a gravação do widget.

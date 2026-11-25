@@ -50,10 +50,14 @@ Imagine que o código verifica o PIN primeiro e conta o erro depois. Então 50 p
 Por isso a tentativa é tomada antes da verificação, numa instrução só:
 
 ```ts
-const reserved = this.db.prepare(`
+const reserved = this.db
+  .prepare(
+    `
   UPDATE approval_links SET pin_failures=pin_failures+1
   WHERE action_id=? AND token_hash=? AND status='open' AND pin_failures<?
-`).run(actionId, tokenHash, this.limits.maxPinFailures).changes;
+`,
+  )
+  .run(actionId, tokenHash, this.limits.maxPinFailures).changes
 ```
 
 Se nenhuma linha muda, não há tentativas sobrando e o scrypt nem roda. Um PIN correto devolve a tentativa dele.
@@ -86,14 +90,18 @@ As duas estavam na primeira versão, e todos os testes dela passavam.
 ## Como usar
 
 ```ts
-import { ActionGate, ApprovalLinks, createApprovalHandler } from 'agent-action-gate';
+import {
+  ActionGate,
+  ApprovalLinks,
+  createApprovalHandler,
+} from 'agent-action-gate'
 
-const gate = new ActionGate('./actions.db');
+const gate = new ActionGate('./actions.db')
 const links = new ApprovalLinks({
   gate,
   pinHash: process.env.APPROVAL_PIN_HASH!,
   path: './links.db',
-});
+})
 
 const proposal = gate.prepare({
   actor: 'agent',
@@ -101,19 +109,21 @@ const proposal = gate.prepare({
   input: { text: 'hi' },
   idempotencyKey: 'call-1',
   ttlMs: 72 * 3600_000,
-});
-const { token } = links.issue(proposal.id);
-await sendToApprover(`https://approvals.example.com/approve/${proposal.id}?t=${token}`);
+})
+const { token } = links.issue(proposal.id)
+await sendToApprover(
+  `https://approvals.example.com/approve/${proposal.id}?t=${token}`,
+)
 
 Bun.serve({
   fetch: createApprovalHandler(links, {
     approver: 'phone',
     onDecision: async (record, decision) => {
-      if (decision === 'reject') return;
-      await gate.execute(record.id, async (input) => sendMessage(input));
+      if (decision === 'reject') return
+      await gate.execute(record.id, async (input) => sendMessage(input))
     },
   }),
-});
+})
 ```
 
 `sendToApprover` e `sendMessage` são código seu. A biblioteca não envia o link. Conversa, e-mail ou SMS é escolha sua.

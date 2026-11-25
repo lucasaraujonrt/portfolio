@@ -2,13 +2,7 @@
 import Link from 'next/link'
 import { motion } from 'motion/react'
 import { ArrowUpRight } from 'lucide-react'
-import {
-  PROJECT_IDS,
-  PT_BLOG_LINKS,
-  TOPIC_IDS,
-  type Dict,
-  type TopicId,
-} from '@/lib/i18n'
+import { PROJECT_IDS, TOPIC_IDS, type Dict, type TopicId } from '@/lib/i18n'
 import {
   BLOG_POSTS,
   EMAIL,
@@ -170,21 +164,22 @@ function WritingAnswer({ dict }: { dict: Dict }) {
       <Lead>{text}</Lead>
       <motion.ul variants={stagger(0, 0.06)} className="flex flex-col gap-3">
         {BLOG_POSTS.map((post) => {
-          const inPortuguese =
-            portugueseTag !== null && PT_BLOG_LINKS.includes(post.link)
+          const inPortuguese = portugueseTag !== null && post.pt !== undefined
           const tag = inPortuguese ? portugueseTag : englishTag
           return (
             <motion.li key={post.uid} variants={rise}>
               <Link
                 href={inPortuguese ? `/pt${post.link}` : post.link}
                 className={card}
-                lang="en"
+                lang={inPortuguese ? undefined : 'en'}
               >
                 <span className="text-lg font-semibold tracking-[-0.01em]">
-                  {post.title}
+                  {inPortuguese && post.pt ? post.pt.title : post.title}
                 </span>
                 <span className="text-[15px] text-zinc-700">
-                  {post.description}
+                  {inPortuguese && post.pt
+                    ? post.pt.description
+                    : post.description}
                 </span>
                 {tag && (
                   <span

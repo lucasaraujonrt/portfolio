@@ -1,10 +1,6 @@
 'use client'
 import { useEffect, useState } from 'react'
-import {
-  AnimatePresence,
-  motion,
-  useReducedMotion,
-} from 'motion/react'
+import { AnimatePresence, motion, useReducedMotion } from 'motion/react'
 import { ArrowRight } from 'lucide-react'
 import { focusRing } from './styles'
 
@@ -75,7 +71,7 @@ export function AskForm({
               <motion.span
                 key={placeholder}
                 aria-hidden="true"
-                className="pointer-events-none absolute inset-y-0 left-0 right-0 flex items-center truncate text-base text-zinc-500"
+                className="pointer-events-none absolute inset-y-0 right-0 left-0 flex items-center truncate text-base text-zinc-500"
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
                 exit={{ opacity: 0 }}

@@ -44,16 +44,19 @@ Duração fixa por trecho não funciona: frase curta deixa silêncio sobrando, e
 ```tsx
 // Narration lengths (s) after trim + atempo 1.08.
 // A beat lasts the line + a breath, never under MIN.
-const NARR = [1.56, 2.75, 2.7, 2.48, 3.2];
-const MIN = [2.4, 4.4, 3.3, 3.4, 3.6];
+const NARR = [1.56, 2.75, 2.7, 2.48, 3.2]
+const MIN = [2.4, 4.4, 3.3, 3.4, 3.6]
 
-const B = NARR.reduce<number[]>((acc, d, i) => {
-  const beat = Math.max(s(d) + 16, s(MIN[i]));
-  const tail = i === NARR.length - 1 ? 24 : 0;
-  return [...acc, acc[i] + beat + tail];
-}, [0]);
+const B = NARR.reduce<number[]>(
+  (acc, d, i) => {
+    const beat = Math.max(s(d) + 16, s(MIN[i]))
+    const tail = i === NARR.length - 1 ? 24 : 0
+    return [...acc, acc[i] + beat + tail]
+  },
+  [0],
+)
 
-export const RW_DURATION = B[NARR.length];
+export const RW_DURATION = B[NARR.length]
 ```
 
 `s()` converte segundos em frames. `B` guarda o frame em que cada trecho começa, e o último valor é a duração do vídeo inteiro.
@@ -65,20 +68,22 @@ Quando uma frase da narração muda, eu mudo um número. Todos os trechos seguin
 Cada trecho é um componente React que só conhece o próprio frame local. A raiz coloca um depois do outro:
 
 ```tsx
-const BEATS = [B1, B2, B3, B4, B5];
+const BEATS = [B1, B2, B3, B4, B5]
 // The outgoing beat fades over the first frames of the next one,
 // so a cut never dips to an empty frame.
-const OVERLAP = 7;
+const OVERLAP = 7
 
-{BEATS.map((_, i) => {
-  const last = i === BEATS.length - 1;
-  const length = B[i + 1] - B[i] + (last ? 0 : OVERLAP);
-  return (
-    <Sequence key={i} from={B[i]} durationInFrames={length}>
-      <Beat i={i} />
-    </Sequence>
-  );
-})}
+{
+  BEATS.map((_, i) => {
+    const last = i === BEATS.length - 1
+    const length = B[i + 1] - B[i] + (last ? 0 : OVERLAP)
+    return (
+      <Sequence key={i} from={B[i]} durationInFrames={length}>
+        <Beat i={i} />
+      </Sequence>
+    )
+  })
+}
 ```
 
 Dentro de um `Sequence`, o frame 0 é o começo daquele trecho. Então um trecho diz "a narração começa no frame 6", e isso continua valendo onde quer que o trecho caia.
@@ -90,17 +95,17 @@ A sobreposição de 7 frames existe por causa dos cortes. Sem ela, um corte pode
 Todo movimento usa as mesmas poucas funções:
 
 ```ts
-export const ENTER = 12;
-export const EXIT = 7;
-export const STAGGER = 2;
+export const ENTER = 12
+export const EXIT = 7
+export const STAGGER = 2
 
 /** 0→1 entering at `at`. */
 export const inP = (f: number, at: number, dur = ENTER) =>
-  interpolate(f, [at, at + dur], [0, 1], { ...clamp, easing: EASE_OUT });
+  interpolate(f, [at, at + dur], [0, 1], { ...clamp, easing: EASE_OUT })
 
 /** 1→0 leaving at `at`. */
 export const outP = (f: number, at: number, dur = EXIT) =>
-  interpolate(f, [at, at + dur], [1, 0], { ...clamp, easing: EASE_OUT });
+  interpolate(f, [at, at + dur], [1, 0], { ...clamp, easing: EASE_OUT })
 ```
 
 As regras são curtas:
@@ -119,8 +124,8 @@ A tremida é uma expressão só:
 
 ```tsx
 // Phone shake on impact.
-const d = f - FLY.slam;
-const shake = d >= 0 && d < 10 ? Math.sin(d * 2.6) * (10 - d) * 1.2 : 0;
+const d = f - FLY.slam
+const shake = d >= 0 && d < 10 ? Math.sin(d * 2.6) * (10 - d) * 1.2 : 0
 ```
 
 É uma onda senoidal que some em 10 frames. O valor entra num `translate` aplicado ao celular.
@@ -131,13 +136,13 @@ Os efeitos sonoros são a parte que as pessoas menos notam e mais sentem. Cada u
 
 ```tsx
 /** Micro sound effect (synthesized in public/reel-widgets/sfx). */
-type SfxProps = { at: number; name: string; vol?: number };
+type SfxProps = { at: number; name: string; vol?: number }
 
 const Sfx: React.FC<SfxProps> = ({ at, name, vol = 0.5 }) => (
   <Sequence from={Math.max(0, at)} layout="none">
     <Audio src={A(`sfx/${name}.wav`)} volume={vol} />
   </Sequence>
-);
+)
 ```
 
 O reel usa esse componente 16 vezes, com seis sons: clique, toque, pop, whoosh, moeda e brilho.

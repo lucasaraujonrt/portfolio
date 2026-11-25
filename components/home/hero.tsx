@@ -1,10 +1,6 @@
 'use client'
 import type React from 'react'
-import {
-  useMotionValue,
-  useReducedMotion,
-  useSpring,
-} from 'motion/react'
+import { useMotionValue, useReducedMotion, useSpring } from 'motion/react'
 import { TOPIC_IDS, type Dict, type TopicId } from '@/lib/i18n'
 import { Avatar } from './avatar'
 import { AskForm } from './ask-form'
@@ -37,8 +33,10 @@ export function Hero({ dict, onSubmit, onPick }: HeroProps) {
       onPointerMove={(event) => {
         if (reduce || event.pointerType !== 'mouse') return
         const rect = event.currentTarget.getBoundingClientRect()
-        const x = (event.clientX - (rect.left + rect.width / 2)) / (rect.width / 2)
-        const y = (event.clientY - (rect.top + rect.height / 2)) / (rect.height / 2)
+        const x =
+          (event.clientX - (rect.left + rect.width / 2)) / (rect.width / 2)
+        const y =
+          (event.clientY - (rect.top + rect.height / 2)) / (rect.height / 2)
         targetX.set(clamp(x) * MAX_TILT)
         targetY.set(-clamp(y) * MAX_TILT)
       }}
@@ -52,7 +50,7 @@ export function Hero({ dict, onSubmit, onPick }: HeroProps) {
       </p>
       <h1
         style={{ '--rise-i': 1 } as React.CSSProperties}
-        className="rise-in max-w-[14ch] text-[clamp(2.25rem,6vw,4.5rem)] font-bold leading-[1.02] tracking-[-0.04em] text-balance"
+        className="rise-in max-w-[14ch] text-[clamp(2.25rem,6vw,4.5rem)] leading-[1.02] font-bold tracking-[-0.04em] text-balance"
       >
         {dict.hero.headline}
       </h1>

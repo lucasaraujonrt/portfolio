@@ -15,11 +15,15 @@ type WorkExperience = {
   id: string
 }
 
-type BlogPost = {
+export type BlogPost = {
   title: string
   description: string
   link: string
   uid: string
+  /** Publication date, YYYY-MM-DD. */
+  date?: string
+  /** Set when the post also exists under /pt/blog. */
+  pt?: { title: string; description: string }
 }
 
 type OpenSource = {
@@ -36,7 +40,14 @@ type SocialLink = {
 
 export type BackgroundItem =
   | { kind: 'school'; id: string; school: string; start: string; end: string }
-  | { kind: 'project'; id: string; name: string; org: string; start: string; end: string }
+  | {
+      kind: 'project'
+      id: string
+      name: string
+      org: string
+      start: string
+      end: string
+    }
   | { kind: 'credential'; id: string; name: string; org: string; when: string }
 
 export const OPEN_SOURCE: OpenSource[] = [
@@ -87,7 +98,8 @@ export const PROJECTS: Project[] = [
   },
   {
     name: 'Nomad Explorer',
-    description: 'Led the build of the credit card inside the Nomad app, from concept to launch.',
+    description:
+      'Led the build of the credit card inside the Nomad app, from concept to launch.',
     link: 'https://www.nomadglobal.com/nomad-explorer-infinite',
     video: '/nomad-explorer.mp4',
     id: 'project1',
@@ -138,9 +150,28 @@ export const WORK_EXPERIENCE: WorkExperience[] = [
 ]
 
 export const BACKGROUND: readonly BackgroundItem[] = [
-  { kind: 'school', id: 'school-puc', school: 'Pontifícia Universidade Católica de Campinas', start: '2018', end: '2022' },
-  { kind: 'project', id: 'project-smart-check-in', name: 'Smart Check In', org: 'PierServ Logistica', start: 'Oct 2020', end: 'Mar 2021' },
-  { kind: 'credential', id: 'credential-omnistack', name: 'Semana Omnistack 11', org: 'Rocketseat', when: 'Apr 2020' },
+  {
+    kind: 'school',
+    id: 'school-puc',
+    school: 'Pontifícia Universidade Católica de Campinas',
+    start: '2018',
+    end: '2022',
+  },
+  {
+    kind: 'project',
+    id: 'project-smart-check-in',
+    name: 'Smart Check In',
+    org: 'PierServ Logistica',
+    start: 'Oct 2020',
+    end: 'Mar 2021',
+  },
+  {
+    kind: 'credential',
+    id: 'credential-omnistack',
+    name: 'Semana Omnistack 11',
+    org: 'Rocketseat',
+    when: 'Apr 2020',
+  },
 ]
 
 export const BLOG_POSTS: BlogPost[] = [
@@ -150,6 +181,13 @@ export const BLOG_POSTS: BlogPost[] = [
       'How an agent asks me before it acts: a one-time link, a 6-digit PIN, lockouts and a race-safe attempt counter, open source in agent-action-gate.',
     link: '/blog/approval-links',
     uid: 'blog-9',
+    date: '2026-11-25',
+    pt: {
+      title:
+        'Aprovação humana para agentes de IA: um link de uso único e um PIN',
+      description:
+        'Como um agente me pergunta antes de agir: link de uso único, PIN de 6 dígitos, bloqueios e um contador de tentativas seguro contra corrida, open source no agent-action-gate.',
+    },
   },
   {
     title: 'Instagram Reels as React components',
@@ -157,6 +195,12 @@ export const BLOG_POSTS: BlogPost[] = [
       'How we build product reels in Remotion: beats sized by the narration, a small motion vocabulary, and sound effects placed by frame.',
     link: '/blog/reels-in-code',
     uid: 'blog-8',
+    date: '2026-11-25',
+    pt: {
+      title: 'Reels do Instagram como componentes React',
+      description:
+        'Como a gente monta reels de produto no Remotion: trechos com a duração da narração, um vocabulário pequeno de movimento e sons posicionados por frame.',
+    },
   },
   {
     title: 'Live Activities and App Intents in an Expo app',
@@ -164,6 +208,12 @@ export const BLOG_POSTS: BlogPost[] = [
       'A lock-screen card with working buttons, driven from React Native: the Objective-C runtime bridge, one idempotent call, and the stale date as the clock.',
     link: '/blog/live-activity-expo',
     uid: 'blog-7',
+    date: '2026-11-25',
+    pt: {
+      title: 'Live Activity e App Intents num app Expo',
+      description:
+        'Um cartão na tela de bloqueio, com botões que funcionam, controlado pelo React Native: a ponte pelo runtime do Objective-C, uma chamada idempotente e a data de expiração como relógio.',
+    },
   },
   {
     title: 'Building Native iOS Widgets with Swift in Expo',
@@ -171,6 +221,7 @@ export const BLOG_POSTS: BlogPost[] = [
       'How I used @bacons/apple-targets to build native SwiftUI widgets for React Native without ejecting from Expo.',
     link: '/blog/inker-widgets',
     uid: 'blog-6',
+    date: '2026-01-19',
   },
   {
     title: 'Trello API Integration: A Simple Solution for Support Tickets',
@@ -178,6 +229,7 @@ export const BLOG_POSTS: BlogPost[] = [
       'Learn how to integrate Trello API to create an organized and visual support ticket system with automatic card creation.',
     link: '/blog/trello',
     uid: 'blog-5',
+    date: '2025-07-07',
   },
   {
     title:
@@ -186,18 +238,22 @@ export const BLOG_POSTS: BlogPost[] = [
       'Learn how to implement a functional and cost-free logging system using Discord webhooks for real-time notifications.',
     link: '/blog/discord',
     uid: 'blog-4',
+    date: '2025-07-07',
   },
   {
-    title: 'How i create a full cross platform to find Inkers',
-    description: 'A full story about ink-er.me',
+    title: 'Building Inker: a SaaS for tattoo artists, end to end',
+    description:
+      'What Inker is today and how it is built: the Expo app, the NestJS API, billing across three stores, the Kitsune agent, and the tools that let one person run it.',
     link: '/blog/inker',
     uid: 'blog-3',
+    date: '2025-03-23',
   },
   {
     title: 'Create a Signature component in React Native',
     description: 'How to create a signature component',
     link: '/blog/signature-component',
     uid: 'blog-2',
+    date: '2025-03-23',
   },
 ]
 

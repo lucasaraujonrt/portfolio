@@ -1,94 +1,84 @@
-# Overview
+# Building Inker: a SaaS for tattoo artists, end to end
 
-Inker is a comprehensive platform designed to help tattoo artists manage their businesses and connect with potential clients. Developed with modern technologies such as Next.js 15, Prisma, AWS, Resend, and ShadcnUI, the platform offers a comprehensive set of tools for tattoo artists to manage their portfolios, appointments, and client communication.
+What Inker is today and how it is built. I founded it in February 2025 and I still build and operate all of it.
 
-## Key Features
+## The problem
 
-### For Tattoo Artists
+Most tattoo artists in Brazil run their business in WhatsApp. A client sends a reference, the artist replies with a price, then they agree on a date and a deposit. All of that happens by hand, in chat, between sessions.
 
-- **Professional Profile**: Creation of personalized profiles with unique URL (@username)
-- **Digital Portfolio**: Upload and management of works through integration with AWS S3
-- **Appointment Management**: Complete system for scheduling, confirming, and managing appointments
-- **Style Visibility**: Registration of tattoo styles to facilitate client discovery
-- **Analytics**: Performance metrics on revenue, clients, and appointments
-- **Email Notifications**: Automated communication system for confirmations and reminders
+Inker gives the artist one place for quotes, agenda, clients and payments. It starts from WhatsApp, because that is where the work already is.
 
-### For Clients
+Today Inker has 800 users, and they have processed more than 3,000 quotes.
 
-- **Tattoo Artist Discovery**: Search for artists filtered by location and style
-- **Portfolio Viewing**: Responsive gallery of tattoo artists' works
-- **Online Scheduling**: Automated time requests and confirmations
-- **Direct Communication**: Contact channels via WhatsApp, Instagram, or website
+## Three codebases
 
-## Technical Architecture
+- **App:** React Native with Expo, on iOS and Android.
+- **Web:** Next.js, for the public pages and the logged-in product.
+- **API:** NestJS, with PostgreSQL, and Redis with BullMQ for background jobs.
 
-### Frontend
+The app talks only to the API. Every feature has one contract document, and the API change lands first.
 
-- **Next.js 15**: React framework with support for Server Components and App Router
-- **TailwindCSS + ShadcnUI**: Consistent and customizable design system
-- **Framer Motion**: Smooth animations for better user experience
-- **React Query**: Server state management with caching and synchronization
-- **NuQS**: URL state management for filters and searches
-- **React Hook Form + Zod**: Typed and robust form validation
+## Kitsune, the studio assistant
 
-### Backend
+Kitsune is the AI agent inside Inker. It runs in production on the Vercel AI SDK, with OpenAI as the main provider and Gemini and Anthropic as fallbacks.
 
-- **Next.js API Routes**: Endpoints organized by domain
-- **Prisma ORM**: Typed data modeling with automatic migrations and seeding
-- **AWS S3**: Storage and management of portfolio images and references
-- **Resend**: Transactional email service for notifications and communications
-- **Better Auth**: Authentication system with support for multiple providers and RBAC
+It uses tools to work across the studio:
 
-### Database
+- a daily queue of what needs attention,
+- action cards, where the artist approves an action before it runs,
+- drafts of quote replies,
+- lead scoring from the real chat history,
+- a daily summary.
 
-- **PostgreSQL**: Relational database system for persistent storage
-- **Prisma Schema**: Data model with complex relationships between entities
+It also turns a reference photo into a stencil, with Gemini image models. That works in the app, in the chat and in the quote flow.
 
-## Challenges and Solutions
+## WhatsApp
 
-### Image Upload Management
+Inker has a multi-tenant WhatsApp Cloud API inbox, with embedded signup, lead scoring and background jobs.
 
-- **Challenge**: Implement secure and efficient upload of multiple images for portfolios.
-- **Solution**: Integration with AWS S3 using direct browser upload with presigned URLs, combined with metadata stored in the PostgreSQL database.
+Around it there are workflows that start in WhatsApp: importing a chat export, Pix deposits, session reminders through approved templates, and follow-ups for requests that went quiet.
 
-### Appointment System
+## Billing across three stores
 
-- **Challenge**: Create an appointment system with conflicts, confirmations, and notifications.
-- **Solution**: Implementation of a flexible data model with states (pending, confirmed, canceled) and integration with transactional emails via Resend.
+An artist can subscribe on the web with Stripe, in the iOS app with Apple in-app purchase, or in the Android app with Google Play.
 
-### Performance with Large Data Sets
+All three sit behind a single entitlements API, so the rest of the product asks one question: what can this account do?
 
-- **Challenge**: Maintain performance when dealing with many tattoo artists, portfolios, and appointments.
-- **Solution**: Implementation of infinite pagination, React Query for efficient caching, and Prisma query optimization with precise field selection.
+On the Stripe side, webhooks went through a shadow mode first, and payment events go through a durable outbox, so an event is not lost and is not sent twice.
 
-### Transactional Email System
+## Native iOS inside Expo
 
-- **Challenge**: Create rich email templates and ensure deliverability.
-- **Solution**: Use of the React Email library for reusable JSX templates and integration with Resend for high delivery rates.
+The app has home-screen widgets on iOS and Android, a Siri shortcut and a Live Activity on the lock screen. The iOS parts are written in Swift, and the app is still a managed Expo project.
 
-### Mobile Experience
+I wrote about two of them:
 
-- **Challenge**: Ensure a responsive and optimized experience for mobile devices.
-- **Solution**: Mobile-first design with TailwindCSS, adaptable components from ShadcnUI, and specific touch optimizations.
+- [Building native iOS widgets with Swift in Expo](/blog/inker-widgets)
+- [Live Activities and App Intents in an Expo app](/blog/live-activity-expo)
 
-## Development Process
+## Infrastructure
 
-The development followed a modular approach, focusing on:
+Production moved from Railway to AWS: EC2, S3 and CodeBuild, with a deploy on every push.
 
-- **Data Modeling**: Precise definition of the Prisma schema to capture all relationships
-- **API Architecture**: Endpoints organized by domain for better maintainability
-- **Componentization**: Reusable components for consistent UI
-- **Custom Hooks**: Separation of business logic from rendering
-- **Integrated Testing**: Quality assurance with automated tests
+Incidents and failed cron jobs send an alert to Discord. I wrote about the idea in [Sending logs to Discord with webhooks](/blog/discord).
 
-## Future Expansions
+## Keeping quality with one person
 
-- **Payment System**: Integration for paid appointments and deposits
-- **Internal Chat**: Direct messages between tattoo artists and clients
-- **Mobile App**: Native version for iOS and Android
-- **Themed Galleries**: Advanced categorization of works
-- **Design Marketplace**: Platform for selling ready-made designs
+The API validates input with Zod, has rate limiting and an OpenAPI contract, and uses strict TypeScript.
 
-## Conclusion
+CI enforces the architecture. Two ratchets stop import cycles and file sizes from growing, and the integrated suite had 3,259 tests in September 2026.
 
-The Inker project represents a comprehensive solution for the tattoo market, combining modern web development technologies with the specific needs of the sector. The chosen architecture provides scalability, performance, and a premium user experience, positioning the platform as an essential tool for tattoo artists looking to expand their reach and optimize their business management.
+## Growth
+
+I also built the funnel: signup attribution, PostHog and Meta Conversions API events, a referral program, and an onboarding that starts from the artist's Instagram handle.
+
+## Running it with agents
+
+I build and operate Inker mostly with coding agents. That only works with tools that let an agent act, stop, ask and show what happened.
+
+Those tools became five open-source projects. One of them is the approval flow in [Human approval for AI agents](/blog/approval-links).
+
+## What it taught me
+
+I own the product decisions, the code, the marketing posts, the support tickets and the conversations with users about what to build next.
+
+Inker taught me to treat engineering as one part of making a product work for real people and for the business.

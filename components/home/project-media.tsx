@@ -9,11 +9,16 @@ const FRAME =
 const PORTRAIT_FRAME =
   'relative aspect-[4/5] w-full overflow-hidden rounded-[14px] border border-zinc-200 bg-zinc-100 md:aspect-square'
 
-type Video = { src: string; poster?: string }
+type Video = { src: string; poster?: string; portrait?: boolean }
 
 const VIDEOS: Partial<Record<ProjectId, Video>> = {
-  inker: { src: '/inker.mp4', poster: '/inker-poster.jpg' },
-  nomad: { src: '/nomad-explorer.mp4', poster: '/nomad-explorer-poster.jpg' },
+  inker: { src: '/inker.mp4', poster: '/inker-poster.jpg', portrait: true },
+  nomad: {
+    src: '/nomad-explorer.mp4',
+    poster: '/nomad-explorer-poster.jpg',
+    portrait: true,
+  },
+  jarvis: { src: '/jarvis-demo.mp4', poster: '/jarvis-poster.jpg' },
   telao: { src: '/telao-demo.mp4' },
 }
 
@@ -66,7 +71,7 @@ export function ProjectMedia({
   }, [])
 
   let content: React.ReactNode
-  if (video?.poster) {
+  if (video?.portrait && video.poster) {
     content = (
       <div className={PORTRAIT_FRAME}>
         {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -95,11 +100,12 @@ export function ProjectMedia({
       <div className={FRAME}>
         <video
           ref={videoRef}
-          src={`${video.src}#t=0.1`}
+          src={video.poster ? video.src : `${video.src}#t=0.1`}
+          poster={video.poster}
           muted
           loop
           playsInline
-          preload="metadata"
+          preload={video.poster ? 'none' : 'metadata'}
           aria-hidden="true"
           tabIndex={-1}
           className="size-full object-cover"

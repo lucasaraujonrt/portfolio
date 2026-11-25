@@ -72,7 +72,7 @@ export function Conversation({
           )
         })}
       </div>
-      <div className="sticky bottom-0 z-10 mt-auto bg-white pb-5 pt-3">
+      <div className="sticky bottom-0 z-10 mt-auto bg-white pt-3 pb-5">
         <AskForm
           inputId="ask-follow-up"
           label={dict.hero.followUpLabel}

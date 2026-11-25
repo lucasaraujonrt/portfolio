@@ -50,10 +50,14 @@ Suppose the code checks the PIN first and counts the failure after. Then 50 para
 So the attempt is taken before the check runs, in one statement:
 
 ```ts
-const reserved = this.db.prepare(`
+const reserved = this.db
+  .prepare(
+    `
   UPDATE approval_links SET pin_failures=pin_failures+1
   WHERE action_id=? AND token_hash=? AND status='open' AND pin_failures<?
-`).run(actionId, tokenHash, this.limits.maxPinFailures).changes;
+`,
+  )
+  .run(actionId, tokenHash, this.limits.maxPinFailures).changes
 ```
 
 If no row changes, there are no attempts left and scrypt never runs. A correct PIN gives its attempt back.
@@ -86,14 +90,18 @@ Both were in the first version, and all its tests passed.
 ## Using it
 
 ```ts
-import { ActionGate, ApprovalLinks, createApprovalHandler } from 'agent-action-gate';
+import {
+  ActionGate,
+  ApprovalLinks,
+  createApprovalHandler,
+} from 'agent-action-gate'
 
-const gate = new ActionGate('./actions.db');
+const gate = new ActionGate('./actions.db')
 const links = new ApprovalLinks({
   gate,
   pinHash: process.env.APPROVAL_PIN_HASH!,
   path: './links.db',
-});
+})
 
 const proposal = gate.prepare({
   actor: 'agent',
@@ -101,19 +109,21 @@ const proposal = gate.prepare({
   input: { text: 'hi' },
   idempotencyKey: 'call-1',
   ttlMs: 72 * 3600_000,
-});
-const { token } = links.issue(proposal.id);
-await sendToApprover(`https://approvals.example.com/approve/${proposal.id}?t=${token}`);
+})
+const { token } = links.issue(proposal.id)
+await sendToApprover(
+  `https://approvals.example.com/approve/${proposal.id}?t=${token}`,
+)
 
 Bun.serve({
   fetch: createApprovalHandler(links, {
     approver: 'phone',
     onDecision: async (record, decision) => {
-      if (decision === 'reject') return;
-      await gate.execute(record.id, async (input) => sendMessage(input));
+      if (decision === 'reject') return
+      await gate.execute(record.id, async (input) => sendMessage(input))
     },
   }),
-});
+})
 ```
 
 `sendToApprover` and `sendMessage` are your own code. The library does not send the link. Chat, email or SMS is your choice.

@@ -30,7 +30,10 @@ export function ShortVersion({ dict }: { dict: Dict }) {
       <ul className="flex flex-wrap gap-x-7 gap-y-1 text-base">
         <li>
           <a href="#open-source" className={linkClass}>
-            {dict.short.openSource.replace('{count}', String(OPEN_SOURCE.length))}
+            {dict.short.openSource.replace(
+              '{count}',
+              String(OPEN_SOURCE.length),
+            )}
           </a>
         </li>
         <li>

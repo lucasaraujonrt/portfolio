@@ -115,7 +115,9 @@ export function HomeClient({
                 src="/avatar-smile.png"
                 className="size-11"
               />
-              <span className="text-base font-semibold">{dict.header.name}</span>
+              <span className="text-base font-semibold">
+                {dict.header.name}
+              </span>
             </button>
           ) : (
             <span className="py-3 text-base font-semibold">
@@ -142,7 +144,7 @@ export function HomeClient({
             onPick={pick}
           />
         ) : (
-          <div className="flex flex-col gap-[72px] pb-[72px] pt-4">
+          <div className="flex flex-col gap-[72px] pt-4 pb-[72px]">
             <Hero dict={dict} onSubmit={submit} onPick={pick} />
             {children}
           </div>

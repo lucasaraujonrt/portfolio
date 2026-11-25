@@ -35,7 +35,7 @@ export default function RootLayout({
   return (
     <html lang="pt-BR">
       <body
-        className={`${geist.variable} ${geistMono.variable} bg-white text-zinc-900 tracking-tight antialiased`}
+        className={`${geist.variable} ${geistMono.variable} bg-white tracking-tight text-zinc-900 antialiased`}
       >
         <div className="flex min-h-screen w-full flex-col">{children}</div>
       </body>
