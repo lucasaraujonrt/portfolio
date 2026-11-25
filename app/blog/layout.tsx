@@ -1,63 +1,90 @@
 'use client'
-import { TextMorph } from '@/components/ui/text-morph'
-import { ScrollProgress } from '@/components/ui/scroll-progress'
-import { useEffect, useState } from 'react'
+import Link from 'next/link'
 import { usePathname } from 'next/navigation'
+import { useEffect, useState } from 'react'
+import { ArrowLeft, Check, Link2 } from 'lucide-react'
+import { ScrollProgress } from '@/components/ui/scroll-progress'
+import { focusRing } from '@/components/home/styles'
 import { Header } from '../header'
 import { Footer } from '../footer'
 
-function CopyButton() {
-  const [text, setText] = useState('Copy')
-  const currentUrl = typeof window !== 'undefined' ? window.location.href : ''
+const pill = `inline-flex min-h-11 items-center gap-2 rounded-full border border-zinc-300 bg-white px-4 text-[15px] font-medium text-neutral-950 transition-[scale,border-color,background-color] duration-150 hover:border-zinc-500 hover:bg-zinc-50 active:scale-[0.97] ${focusRing}`
+
+function CopyButton({ portuguese }: { portuguese: boolean }) {
+  const [copied, setCopied] = useState(false)
 
   useEffect(() => {
-    setTimeout(() => {
-      setText('Copy')
-    }, 2000)
-  }, [text])
+    if (!copied) return
+    const timer = setTimeout(() => setCopied(false), 2000)
+    return () => clearTimeout(timer)
+  }, [copied])
+
+  const idle = portuguese ? 'Copiar link' : 'Copy link'
+  const done = portuguese ? 'Copiado' : 'Copied'
 
   return (
     <button
-      onClick={() => {
-        setText('Copied')
-        navigator.clipboard.writeText(currentUrl)
-      }}
-      className="font-base flex items-center gap-1 text-center text-sm text-zinc-500 transition-colors"
       type="button"
+      className={pill}
+      onClick={() => {
+        void navigator.clipboard
+          .writeText(window.location.href)
+          .then(() => setCopied(true))
+      }}
     >
-      <TextMorph>{text}</TextMorph>
-      <span>URL</span>
+      {copied ? (
+        <Check aria-hidden="true" size={16} />
+      ) : (
+        <Link2 aria-hidden="true" size={16} />
+      )}
+      <span aria-live="polite">{copied ? done : idle}</span>
     </button>
   )
 }
 
-export default function LayoutBlogPost({
+export default function BlogLayout({
   children,
 }: {
   children: React.ReactNode
 }) {
   const pathname = usePathname()
+  const portuguese = pathname.startsWith('/pt/')
+  const isIndex = pathname === '/blog'
+
   return (
     <div
-      lang={pathname.startsWith('/pt/') ? undefined : 'en'}
-      className="relative mx-auto w-full max-w-screen-sm flex-1 px-4 pt-20"
+      lang={portuguese ? undefined : 'en'}
+      className="mx-auto flex min-h-dvh w-full max-w-[1040px] flex-col gap-10 px-5 pb-16 font-[family-name:var(--font-geist)] text-neutral-950"
     >
-      <Header />
-      <div className="pointer-events-none fixed top-0 left-0 z-10 h-12 w-full bg-white to-transparent backdrop-blur-xl [-webkit-mask-image:linear-gradient(to_bottom,black,transparent)]" />
-      <ScrollProgress
-        className="fixed top-0 z-20 h-0.5 bg-gray-300"
-        springOptions={{
-          bounce: 0,
-        }}
-      />
+      {!isIndex && (
+        <ScrollProgress
+          className="fixed top-0 left-0 z-20 h-0.5 bg-blue-700"
+          springOptions={{ bounce: 0 }}
+        />
+      )}
+      <Header portuguese={portuguese} />
 
-      <div className="absolute top-24 right-4">
-        <CopyButton />
-      </div>
-      <main className="prose prose-gray prose-h4:prose-base prose-h1:text-xl prose-h1:font-medium prose-h2:mt-12 prose-h2:scroll-m-20 prose-h2:text-lg prose-h2:font-medium prose-h3:text-base prose-h3:font-medium prose-h4:font-medium prose-h5:text-base prose-h5:font-medium prose-h6:text-base prose-h6:font-medium prose-strong:font-medium mt-24 pb-20">
-        {children}
-      </main>
-      <Footer />
+      {isIndex ? (
+        <main className="flex-1">{children}</main>
+      ) : (
+        <main className="mx-auto w-full max-w-[680px] flex-1">
+          <div className="rise-in mb-10 flex flex-wrap items-center justify-between gap-3">
+            <Link href="/blog" className={pill}>
+              <ArrowLeft aria-hidden="true" size={16} />
+              {portuguese ? 'Todos os textos' : 'All posts'}
+            </Link>
+            <CopyButton portuguese={portuguese} />
+          </div>
+          <article
+            style={{ '--rise-i': 1 } as React.CSSProperties}
+            className="rise-in prose prose-zinc prose-headings:tracking-[-0.02em] prose-h1:mb-6 prose-h1:text-[clamp(1.875rem,4.4vw,2.75rem)] prose-h1:leading-[1.08] prose-h1:font-semibold prose-h1:tracking-[-0.035em] prose-h2:mt-12 prose-h2:scroll-m-20 prose-h2:text-2xl prose-h2:font-semibold prose-h3:text-lg prose-h3:font-semibold prose-p:text-[17px] prose-p:leading-[1.7] prose-a:text-blue-700 prose-a:underline-offset-4 prose-strong:font-semibold prose-li:text-[17px] prose-img:rounded-2xl max-w-none"
+          >
+            {children}
+          </article>
+        </main>
+      )}
+
+      <Footer portuguese={portuguese} />
     </div>
   )
 }

@@ -17,7 +17,7 @@ export const PT_BLOG_LINKS: readonly string[] = [
   '/blog/live-activity-expo',
 ]
 
-export const PROJECT_IDS = ['inker', 'jarvis', 'telao', 'nomad'] as const
+export const PROJECT_IDS = ['inker', 'nomad', 'jarvis', 'telao'] as const
 
 export type ProjectId = (typeof PROJECT_IDS)[number]
 
